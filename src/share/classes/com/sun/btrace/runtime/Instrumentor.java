@@ -853,7 +853,7 @@ public class Instrumentor extends ClassVisitor {
                         if (executed) {
                             execThrow();
                         } else {
-                            // execWithParas level up to case ERROR:
+                            // execWithParas() level up to case ERROR:
                         }
                     }
                     
