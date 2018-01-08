@@ -812,22 +812,6 @@ public class Instrumentor extends ClassVisitor {
                         vr = validateArguments(om, actionArgTypes, new Type[]{THROWABLE_TYPE});
                     }
     
-                    private void loadrgsWithParas(int throwableIndex){
-                        loadArguments(
-                                vr, actionArgTypes, isStatic(),
-                                constArg(throwableIndex, THROWABLE_TYPE),
-                                constArg(om.getMethodParameter(), getName(om.isMethodFqn())),
-                                constArg(om.getClassNameParameter(), className.replace("/", ".")),
-                                selfArg(om.getSelfParameter(), Type.getObjectType(className)),
-                                new ArgumentProvider(asm, om.getDurationParameter()) {
-                                    @Override
-                                    public void doProvide() {
-                                        MethodTrackingExpander.DURATION.insert(mv);
-                                    }
-                                }
-                        );
-                    }
-    
                     private ArgumentProvider[] buildArgsWithoutParas(int throwableIndex){
                         ArgumentProvider[] actionArgs = new ArgumentProvider[5];
     
@@ -843,6 +827,22 @@ public class Instrumentor extends ClassVisitor {
                         };
                         return actionArgs;
                     }
+    
+                    private void loadrgsWithParas(int throwableIndex){
+                        loadArguments(
+                                vr, actionArgTypes, isStatic(),
+                                constArg(throwableIndex, THROWABLE_TYPE),
+                                constArg(om.getMethodParameter(), getName(om.isMethodFqn())),
+                                constArg(om.getClassNameParameter(), className.replace("/", ".")),
+                                selfArg(om.getSelfParameter(), Type.getObjectType(className)),
+                                new ArgumentProvider(asm, om.getDurationParameter()) {
+                                    @Override
+                                    public void doProvide() {
+                                        MethodTrackingExpander.DURATION.insert(mv);
+                                    }
+                                }
+                        );
+                    }
 
                     @Override
                     protected void onErrorReturn() {
@@ -855,11 +855,11 @@ public class Instrumentor extends ClassVisitor {
                                 asm.dup();
                                 throwableIndex = storeAsNew();
                             }
-    
-                            Label l = null;
+                            
+                            ArgumentProvider[] actionArgs = null;
+                            Label l = levelCheck(om, bcn.getClassName(true));
                             if (vr.isAny()) {
-                                ArgumentProvider[] actionArgs = buildArgsWithoutParas(throwableIndex);
-                                l = levelCheck(om, bcn.getClassName(true));
+                                actionArgs = actionArgs == null ? buildArgsWithoutParas(throwableIndex) : actionArgs;
                                 loadArguments(actionArgs);
                             } else {
                                 loadrgsWithParas(throwableIndex);
