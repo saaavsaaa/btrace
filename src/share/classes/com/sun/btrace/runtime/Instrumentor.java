@@ -812,14 +812,12 @@ public class Instrumentor extends ClassVisitor {
                         vr = validateArguments(om, actionArgTypes, new Type[]{THROWABLE_TYPE});
                     }
     
-                    private void loadWithArgs(int throwableIndex){
-                        boolean boxReturnValue = false;
-        
+                    private void loadrgsWithParas(int throwableIndex){
                         loadArguments(
                                 vr, actionArgTypes, isStatic(),
+                                constArg(throwableIndex, THROWABLE_TYPE),
                                 constArg(om.getMethodParameter(), getName(om.isMethodFqn())),
                                 constArg(om.getClassNameParameter(), className.replace("/", ".")),
-//                                localVarArg(-1, THROWABLE_TYPE, throwableIndex, boxReturnValue),
                                 selfArg(om.getSelfParameter(), Type.getObjectType(className)),
                                 new ArgumentProvider(asm, om.getDurationParameter()) {
                                     @Override
@@ -830,7 +828,7 @@ public class Instrumentor extends ClassVisitor {
                         );
                     }
     
-                    private ArgumentProvider[] callWithoutArgs(int throwableIndex){
+                    private ArgumentProvider[] buildArgsWithoutParas(int throwableIndex){
                         ArgumentProvider[] actionArgs = new ArgumentProvider[5];
     
                         actionArgs[0] = localVarArg(vr.getArgIdx(0), THROWABLE_TYPE, throwableIndex);
@@ -858,11 +856,15 @@ public class Instrumentor extends ClassVisitor {
                                 throwableIndex = storeAsNew();
                             }
     
-                            ArgumentProvider[] actionArgs = callWithoutArgs(throwableIndex);
-                            Label l = levelCheck(om, bcn.getClassName(true));
-
-                            loadArguments(actionArgs);
-
+                            Label l = null;
+                            if (vr.isAny()) {
+                                ArgumentProvider[] actionArgs = buildArgsWithoutParas(throwableIndex);
+                                l = levelCheck(om, bcn.getClassName(true));
+                                loadArguments(actionArgs);
+                            } else {
+                                loadrgsWithParas(throwableIndex);
+                            }
+                            
                             invokeBTraceAction(asm, om);
                             if (l != null) {
                                 mv.visitLabel(l);
