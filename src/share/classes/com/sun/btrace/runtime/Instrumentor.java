@@ -846,42 +846,65 @@ public class Instrumentor extends ClassVisitor {
 
                     @Override
                     protected void onErrorReturn() {
-                        if (vr.isValid()) {
-                            int throwableIndex = -1;
-
-                            MethodTrackingExpander.TEST_SAMPLE.insert(mv, MethodTrackingExpander.$TIMED);
-
-                            if (!vr.isAny()) {
-                                asm.dup();
-                                throwableIndex = storeAsNew();
-                            }
+                        if (!vr.isValid()) {
+                            return;
+                        }
+                        boolean executed = true;
+                        if (executed) {
+                            execThrow();
+                        } else {
+                            // execWithParas level up to case ERROR:
+                        }
+                    }
+                    
+                    private void execWithParas(){
+                        int throwableIndex = -1;
     
-                            Label l = null;
-                            if (vr.isAny()) {
-                                ArgumentProvider[] actionArgs = buildArgsWithoutParas(throwableIndex);
-                                l = levelCheck(om, bcn.getClassName(true));
-                                loadArguments(actionArgs);
+                        MethodTrackingExpander.TEST_SAMPLE.insert(mv, MethodTrackingExpander.$TIMED);
     
-                                invokeBTraceAction(asm, om);
-                                if (l != null) {
-                                    mv.visitLabel(l);
-                                    insertFrameSameStack(l);
-                                }
-                                MethodTrackingExpander.ELSE_SAMPLE.insert(mv);
-                            } else {
-                                vr = validateArguments(om, actionArgTypes, Type.getArgumentTypes(getDescriptor()));
-                                loadArgsWithParas(throwableIndex);
+                        if (!vr.isAny()) {
+                            asm.dup();
+                            throwableIndex = storeAsNew();
+                        }
+    
+                        ValidationResult vr;
+                        {
+                            addExtraTypeInfo(om.getSelfParameter(), Type.getObjectType(className));
+                            vr = validateArguments(om, actionArgTypes, Type.getArgumentTypes(getDescriptor()));
+                        }
+                        Label l = levelCheck(om, bcn.getClassName(true));
+                        loadArgsWithParas(throwableIndex);
 //                                ArgumentProvider[] actionArgs = buildArgsWithoutParas(throwableIndex);
 //                                l = levelCheck(om, bcn.getClassName(true));
 //                                loadArguments(actionArgs);
-                                invokeBTraceAction(asm, om);
-                                MethodTrackingExpander.ELSE_SAMPLE.insert(mv);
-                                if (l != null) {
-                                    mv.visitLabel(l);
-                                    insertFrameSameStack(l);
-                                }
-                            }
+                        invokeBTraceAction(asm, om);
+                        MethodTrackingExpander.ELSE_SAMPLE.insert(mv);
+                        if (l != null) {
+                            mv.visitLabel(l);
+                            insertFrameSameStack(l);
                         }
+                    }
+                    
+                    private void execThrow(){
+                        int throwableIndex = -1;
+    
+                        MethodTrackingExpander.TEST_SAMPLE.insert(mv, MethodTrackingExpander.$TIMED);
+    
+                        if (!vr.isAny()) {
+                            asm.dup();
+                            throwableIndex = storeAsNew();
+                        }
+    
+                        ArgumentProvider[] actionArgs = buildArgsWithoutParas(throwableIndex);
+                        Label l = levelCheck(om, bcn.getClassName(true));
+                        loadArguments(actionArgs);
+    
+                        invokeBTraceAction(asm, om);
+                        if (l != null) {
+                            mv.visitLabel(l);
+                            insertFrameSameStack(l);
+                        }
+                        MethodTrackingExpander.ELSE_SAMPLE.insert(mv);
                     }
 
                     private boolean generatingCode = false;
