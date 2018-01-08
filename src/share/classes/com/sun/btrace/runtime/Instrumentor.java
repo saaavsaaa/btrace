@@ -827,8 +827,8 @@ public class Instrumentor extends ClassVisitor {
                         };
                         return actionArgs;
                     }
-    
-                    private void loadrgsWithParas(int throwableIndex){
+                    
+                    private void loadArgsWithParas(int throwableIndex){
                         loadArguments(
                                 vr, actionArgTypes, isStatic(),
                                 constArg(throwableIndex, THROWABLE_TYPE),
@@ -855,22 +855,22 @@ public class Instrumentor extends ClassVisitor {
                                 asm.dup();
                                 throwableIndex = storeAsNew();
                             }
-                            
-                            ArgumentProvider[] actionArgs = null;
-                            Label l = levelCheck(om, bcn.getClassName(true));
+    
+                            Label l = null;
                             if (vr.isAny()) {
-                                actionArgs = actionArgs == null ? buildArgsWithoutParas(throwableIndex) : actionArgs;
+                                ArgumentProvider[] actionArgs = buildArgsWithoutParas(throwableIndex);
+                                l = levelCheck(om, bcn.getClassName(true));
                                 loadArguments(actionArgs);
                             } else {
-                                loadrgsWithParas(throwableIndex);
+                                loadArgsWithParas(throwableIndex);
                             }
                             
                             invokeBTraceAction(asm, om);
+                            MethodTrackingExpander.ELSE_SAMPLE.insert(mv);
                             if (l != null) {
                                 mv.visitLabel(l);
                                 insertFrameSameStack(l);
                             }
-                            MethodTrackingExpander.ELSE_SAMPLE.insert(mv);
                         }
                     }
 
