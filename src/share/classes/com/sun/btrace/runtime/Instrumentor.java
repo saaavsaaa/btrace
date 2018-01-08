@@ -821,7 +821,7 @@ public class Instrumentor extends ClassVisitor {
                                 vr, actionArgTypes, isStatic(),
                                 constArg(om.getMethodParameter(), getName(om.isMethodFqn())),
                                 constArg(om.getClassNameParameter(), className.replace("/", ".")),
-                                localVarArg(-1, THROWABLE_TYPE, throwableIndex, boxReturnValue),
+//                                localVarArg(-1, THROWABLE_TYPE, throwableIndex, boxReturnValue),
                                 selfArg(om.getSelfParameter(), Type.getObjectType(className)),
                                 new ArgumentProvider(asm, om.getDurationParameter()) {
                                     @Override
