@@ -860,10 +860,12 @@ public class Instrumentor extends ClassVisitor {
                             if (vr.isAny()) {
                                 ArgumentProvider[] actionArgs = buildArgsWithoutParas(throwableIndex);
                                 l = levelCheck(om, bcn.getClassName(true));
+                                loadArguments(actionArgs);
                             } else {
 //                                loadArgsWithParas(throwableIndex);
                                 ArgumentProvider[] actionArgs = buildArgsWithoutParas(throwableIndex);
                                 l = levelCheck(om, bcn.getClassName(true));
+                                loadArguments(actionArgs);
                             }
                             
                             invokeBTraceAction(asm, om);
