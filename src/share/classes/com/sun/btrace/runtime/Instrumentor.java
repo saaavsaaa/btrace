@@ -859,15 +859,17 @@ public class Instrumentor extends ClassVisitor {
                                 asm.dup();
                                 throwableIndex = storeAsNew();
                             }
-    
-                            Label l = null;
+                            ArgumentProvider[] actionArgs = callWithoutArgs(throwableIndex);
+                            Label l = levelCheck(om, bcn.getClassName(true));
+                            loadArguments(actionArgs);
+                            /*Label l = null;
                             if (vr.isAny()){
                                 ArgumentProvider[] actionArgs = callWithoutArgs(throwableIndex);
                                 l = levelCheck(om, bcn.getClassName(true));
                                 loadArguments(actionArgs);
                             } else {
                                 loadWithArgs(throwableIndex);
-                            }
+                            }*/
 
                             invokeBTraceAction(asm, om);
                             if (l != null) {
