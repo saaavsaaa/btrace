@@ -814,6 +814,8 @@ public class Instrumentor extends ClassVisitor {
                     ValidationResult vr;
                     {
                         addExtraTypeInfo(om.getSelfParameter(), Type.getObjectType(className));
+                        addExtraTypeInfo(om.getReturnParameter(), getReturnType());
+                        
                         vr = validateArguments(om, actionArgTypes, Type.getArgumentTypes(getDescriptor()));
                     }
     
@@ -837,6 +839,7 @@ public class Instrumentor extends ClassVisitor {
                         loadArguments(
                                 vr, actionArgTypes, isStatic(),
                                 constArg(throwableIndex, THROWABLE_TYPE),
+                                constArg(om.getReturnParameter(), getReturnType()),
                                 constArg(om.getMethodParameter(), getName(om.isMethodFqn())),
                                 constArg(om.getClassNameParameter(), className.replace("/", ".")),
                                 selfArg(om.getSelfParameter(), Type.getObjectType(className)),
