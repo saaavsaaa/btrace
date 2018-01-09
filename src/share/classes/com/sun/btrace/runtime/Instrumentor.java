@@ -832,8 +832,9 @@ public class Instrumentor extends ClassVisitor {
                             Label l = levelCheck(om, bcn.getClassName(true));
                             
                             if (numActionArgs > 0) {
-                                loadArguments(vr, actionArgTypes, isStatic(), actionArgs);
+                                
                             }
+                            loadArguments(vr, actionArgTypes, isStatic(), actionArgs);
                             
                             invokeBTraceAction(asm, om);
                             MethodTrackingExpander.ELSE_SAMPLE.insert(mv);
