@@ -245,6 +245,11 @@ public class Instrumentor extends ClassVisitor {
         final OnMethod om, MethodVisitor mv,
         final MethodInstrumentorHelper mHelper,
         final int access, final String name, final String desc) {
+        System.out.println("getMethod:" + om.getMethod());
+        System.out.println("getTargetName:" + om.getTargetName());
+        System.out.println("name:" + name);
+        System.out.println("desc:" + desc);
+        
         final Location loc = om.getLocation();
         final Where where = loc.getWhere();
         final Type[] actionArgTypes = Type.getArgumentTypes(om.getTargetDescriptor());
@@ -809,13 +814,13 @@ public class Instrumentor extends ClassVisitor {
                     ValidationResult vr;
                     {
                         addExtraTypeInfo(om.getSelfParameter(), Type.getObjectType(className));
-                        vr = validateArguments(om, actionArgTypes, new Type[]{THROWABLE_TYPE});
+                        vr = validateArguments(om, actionArgTypes, Type.getArgumentTypes(getDescriptor()));
                     }
     
-                    private ArgumentProvider[] buildArgsWithoutParas(int throwableIndex){
+                    private ArgumentProvider[] buildArgsWithoutParas(int throwableIndex, ValidationResult vro){
                         ArgumentProvider[] actionArgs = new ArgumentProvider[5];
     
-                        actionArgs[0] = localVarArg(vr.getArgIdx(0), THROWABLE_TYPE, throwableIndex);
+                        actionArgs[0] = localVarArg(vro.getArgIdx(0), THROWABLE_TYPE, throwableIndex);
                         actionArgs[1] = constArg(om.getClassNameParameter(), className.replace('/', '.'));
                         actionArgs[2] = constArg(om.getMethodParameter(), getName(om.isMethodFqn()));
                         actionArgs[3] = selfArg(om.getSelfParameter(), Type.getObjectType(className));
@@ -828,9 +833,9 @@ public class Instrumentor extends ClassVisitor {
                         return actionArgs;
                     }
                     
-                    private void loadArgsWithParas(int throwableIndex){
+                    private void loadArgsWithParas(int throwableIndex, ValidationResult vrw){
                         loadArguments(
-                                vr, actionArgTypes, isStatic(),
+                                vrw, actionArgTypes, isStatic(),
                                 constArg(throwableIndex, THROWABLE_TYPE),
                                 constArg(om.getMethodParameter(), getName(om.isMethodFqn())),
                                 constArg(om.getClassNameParameter(), className.replace("/", ".")),
@@ -846,37 +851,35 @@ public class Instrumentor extends ClassVisitor {
 
                     @Override
                     protected void onErrorReturn() {
-                        if (!vr.isValid()) {
-                            return;
-                        }
-                        boolean executed = true;
-                        if (executed) {
-                            execThrow();
-                        } else {
-                            // execWithParas() level up to case ERROR:
+                        if (vr.isValid()) {
+                            int throwableIndex = -1;
+    
+                            MethodTrackingExpander.TEST_SAMPLE.insert(mv, MethodTrackingExpander.$TIMED);
+    
+                            System.out.println("throwableIndex:" + throwableIndex);
+    
+                            if (!vr.isAny()) {
+                                asm.dup();
+                                throwableIndex = storeAsNew();
+                            }
+    
+                            System.out.println("throwableIndex:" + throwableIndex);
+                            boolean executed = true;
+                            executed = vr.isAny();
+                            if (executed) {
+                                System.out.println("execThrow");
+                                execThrow(throwableIndex);
+                            } else {
+                                System.out.println("execWithParas");
+                                // execWithParas() level up to case ERROR:
+                                execWithParas(throwableIndex);
+                            }
                         }
                     }
                     
-                    private void execWithParas(){
-                        int throwableIndex = -1;
-    
-                        MethodTrackingExpander.TEST_SAMPLE.insert(mv, MethodTrackingExpander.$TIMED);
-    
-                        if (!vr.isAny()) {
-                            asm.dup();
-                            throwableIndex = storeAsNew();
-                        }
-    
-                        ValidationResult vr;
-                        {
-                            addExtraTypeInfo(om.getSelfParameter(), Type.getObjectType(className));
-                            vr = validateArguments(om, actionArgTypes, Type.getArgumentTypes(getDescriptor()));
-                        }
+                    private void execWithParas(int throwableIndex){
                         Label l = levelCheck(om, bcn.getClassName(true));
-                        loadArgsWithParas(throwableIndex);
-//                                ArgumentProvider[] actionArgs = buildArgsWithoutParas(throwableIndex);
-//                                l = levelCheck(om, bcn.getClassName(true));
-//                                loadArguments(actionArgs);
+                        loadArgsWithParas(throwableIndex, vr);
                         invokeBTraceAction(asm, om);
                         MethodTrackingExpander.ELSE_SAMPLE.insert(mv);
                         if (l != null) {
@@ -885,17 +888,14 @@ public class Instrumentor extends ClassVisitor {
                         }
                     }
                     
-                    private void execThrow(){
-                        int throwableIndex = -1;
-    
-                        MethodTrackingExpander.TEST_SAMPLE.insert(mv, MethodTrackingExpander.$TIMED);
-    
-                        if (!vr.isAny()) {
-                            asm.dup();
-                            throwableIndex = storeAsNew();
+                    private void execThrow(int throwableIndex){
+                        ValidationResult vrw;
+                        {
+                            addExtraTypeInfo(om.getSelfParameter(), Type.getObjectType(className));
+                            vrw = validateArguments(om, actionArgTypes, new Type[]{THROWABLE_TYPE});
                         }
-    
-                        ArgumentProvider[] actionArgs = buildArgsWithoutParas(throwableIndex);
+                        
+                        ArgumentProvider[] actionArgs = buildArgsWithoutParas(throwableIndex, vrw);
                         Label l = levelCheck(om, bcn.getClassName(true));
                         loadArguments(actionArgs);
     
