@@ -817,10 +817,10 @@ public class Instrumentor extends ClassVisitor {
                         vr = validateArguments(om, actionArgTypes, Type.getArgumentTypes(getDescriptor()));
                     }
     
-                    private ArgumentProvider[] buildArgsWithoutParas(int throwableIndex, ValidationResult vro){
+                    private ArgumentProvider[] buildArgsWithoutParas(int throwableIndex){
                         ArgumentProvider[] actionArgs = new ArgumentProvider[5];
     
-                        actionArgs[0] = localVarArg(vro.getArgIdx(0), THROWABLE_TYPE, throwableIndex);
+                        actionArgs[0] = localVarArg(vr.getArgIdx(0), THROWABLE_TYPE, throwableIndex);
                         actionArgs[1] = constArg(om.getClassNameParameter(), className.replace('/', '.'));
                         actionArgs[2] = constArg(om.getMethodParameter(), getName(om.isMethodFqn()));
                         actionArgs[3] = selfArg(om.getSelfParameter(), Type.getObjectType(className));
@@ -833,9 +833,9 @@ public class Instrumentor extends ClassVisitor {
                         return actionArgs;
                     }
                     
-                    private void loadArgsWithParas(int throwableIndex, ValidationResult vrw){
+                    private void loadArgsWithParas(int throwableIndex){
                         loadArguments(
-                                vrw, actionArgTypes, isStatic(),
+                                vr, actionArgTypes, isStatic(),
                                 constArg(throwableIndex, THROWABLE_TYPE),
                                 constArg(om.getMethodParameter(), getName(om.isMethodFqn())),
                                 constArg(om.getClassNameParameter(), className.replace("/", ".")),
@@ -879,7 +879,7 @@ public class Instrumentor extends ClassVisitor {
                     
                     private void execWithParas(int throwableIndex){
                         Label l = levelCheck(om, bcn.getClassName(true));
-                        loadArgsWithParas(throwableIndex, vr);
+                        loadArgsWithParas(throwableIndex);
                         invokeBTraceAction(asm, om);
                         MethodTrackingExpander.ELSE_SAMPLE.insert(mv);
                         if (l != null) {
@@ -895,7 +895,8 @@ public class Instrumentor extends ClassVisitor {
                             vrw = validateArguments(om, actionArgTypes, new Type[]{THROWABLE_TYPE});
                         }
                         
-                        ArgumentProvider[] actionArgs = buildArgsWithoutParas(throwableIndex, vrw);
+                        vr = vrw;
+                        ArgumentProvider[] actionArgs = buildArgsWithoutParas(throwableIndex);
                         Label l = levelCheck(om, bcn.getClassName(true));
                         loadArguments(actionArgs);
     
