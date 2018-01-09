@@ -828,14 +828,9 @@ public class Instrumentor extends ClassVisitor {
                                 throwableIndex = storeAsNew();
                             }
     
-                            Label l = null;
-                            if (numActionArgs == 0) {
-                                ArgumentProvider[] actionArgs = buildArgsWithoutParas(throwableIndex);
-                                l = levelCheck(om, bcn.getClassName(true));
-                                loadArguments(actionArgs);
-                            } else {
-                                loadrgsWithParas(throwableIndex);
-                            }
+                            ArgumentProvider[] actionArgs = buildArgsWithoutParas(throwableIndex);
+                            Label l = levelCheck(om, bcn.getClassName(true));
+                            loadArguments(vr, actionArgTypes, isStatic(), actionArgs);
                             
                             invokeBTraceAction(asm, om);
                             if (l != null) {
@@ -865,7 +860,7 @@ public class Instrumentor extends ClassVisitor {
                     private ArgumentProvider[] buildArgsWithoutParas(int throwableIndex){
                         ArgumentProvider[] actionArgs = new ArgumentProvider[5];
         
-                        actionArgs[0] = localVarArg(vr.getArgIdx(0), THROWABLE_TYPE, throwableIndex);
+                        actionArgs[0] = constArg(throwableIndex, THROWABLE_TYPE); //localVarArg(vr.getArgIdx(0), THROWABLE_TYPE, throwableIndex);
                         actionArgs[1] = constArg(om.getClassNameParameter(), className.replace('/', '.'));
                         actionArgs[2] = constArg(om.getMethodParameter(), getName(om.isMethodFqn()));
                         actionArgs[3] = selfArg(om.getSelfParameter(), Type.getObjectType(className));
