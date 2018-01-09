@@ -836,11 +836,11 @@ public class Instrumentor extends ClassVisitor {
                             }
                             
                             invokeBTraceAction(asm, om);
+                            MethodTrackingExpander.ELSE_SAMPLE.insert(mv);
                             if (l != null) {
                                 mv.visitLabel(l);
                                 insertFrameSameStack(l);
                             }
-                            MethodTrackingExpander.ELSE_SAMPLE.insert(mv);
                         }
                     }
     
