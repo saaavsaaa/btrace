@@ -865,8 +865,8 @@ public class Instrumentor extends ClassVisitor {
     
                             System.out.println("throwableIndex:" + throwableIndex);
                             boolean executed = true;
-                            executed = vr.isAny();
-                            if (executed) {
+//                            executed = vr.isAny();
+                            if (!executed) {
                                 System.out.println("execThrow");
                                 execThrow(throwableIndex);
                             } else {
