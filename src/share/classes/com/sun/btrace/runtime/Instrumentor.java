@@ -831,9 +831,7 @@ public class Instrumentor extends ClassVisitor {
                             ArgumentProvider[] actionArgs = buildArgsWithoutParas(throwableIndex);
                             Label l = levelCheck(om, bcn.getClassName(true));
                             
-                            if (numActionArgs == 0) {
-                                loadArguments(actionArgs);
-                            } else {
+                            if (numActionArgs > 0) {
                                 loadArguments(vr, actionArgTypes, isStatic(), actionArgs);
                             }
                             
