@@ -810,45 +810,73 @@ public class Instrumentor extends ClassVisitor {
                     {
                         addExtraTypeInfo(om.getSelfParameter(), Type.getObjectType(className));
 //                        vr = validateArguments(om, actionArgTypes, new Type[]{THROWABLE_TYPE});
-
                         vr = validateArguments(om, actionArgTypes, Type.getArgumentTypes(getDescriptor()));
                     }
-
-                    @Override
-                    protected void onErrorReturn() {
-                        if (vr.isValid() || vr.isAny()) {
-//                        if (vr.isValid()) {
-                            int throwableIndex = -1;
-
-                            MethodTrackingExpander.TEST_SAMPLE.insert(mv, MethodTrackingExpander.$TIMED);
-
-                            if (!vr.isAny()) {
-                                asm.dup();
-                                throwableIndex = storeAsNew();
-                            }
     
-                            ArgumentProvider[] actionArgs = buildArgsWithoutParas(throwableIndex);
-                            Label l = levelCheck(om, bcn.getClassName(true));
-                            
-                            if (numActionArgs > 0) {
-                                
+                    private ArgumentProvider[] loadArgsWithParas(int throwableIndex){
+                        Type probeRetType = getReturnType();
+                        boolean boxReturnValue = true;
+                        int retValIndex = -1;
+                        if (om.getReturnParameter() != -1) {
+                            Type retType = Type.getArgumentTypes(om.getTargetDescriptor())[om.getReturnParameter()];
+                            if (probeRetType.equals(Type.VOID_TYPE)) {
+                                if (TypeUtils.isAnyType(retType)) {
+                                    // no return value but still tracking
+                                    // let's push a synthetic AnyType value on stack
+                                    asm.getStatic(Type.getInternalName(AnyType.class), "VOID", ANYTYPE_DESC);
+                                    probeRetType = OBJECT_TYPE;
+                                } else if (VOIDREF_TYPE.equals(retType)) {
+                                    // intercepting return from method not returning value (void)
+                                    // the receiver accepts java.lang.Void only so let's push NULL on stack
+                                    asm.loadNull();
+                                    probeRetType = VOIDREF_TYPE;
+                                }
+                            } else {
+                                if (Type.getReturnType(om.getTargetDescriptor()).getSort() == Type.VOID) {
+                                    asm.dupReturnValue(-1);
+                                }
+                                boxReturnValue = TypeUtils.isAnyType(retType);
                             }
-                            loadArguments(vr, actionArgTypes, isStatic(), actionArgs);
-                            
-                            invokeBTraceAction(asm, om);
-                            MethodTrackingExpander.ELSE_SAMPLE.insert(mv);
-                            if (l != null) {
-                                mv.visitLabel(l);
-                                insertFrameSameStack(l);
-                            }
+                            retValIndex = storeAsNew();
                         }
+                        
+                        /*loadArguments(
+                                vr, actionArgTypes, isStatic(),
+                                constArg(throwableIndex, THROWABLE_TYPE),
+                                constArg(om.getMethodParameter(), getName(om.isMethodFqn())),
+                                constArg(om.getClassNameParameter(), className.replace("/", ".")),
+                                localVarArg(om.getReturnParameter(), probeRetType, retValIndex, boxReturnValue),
+                                selfArg(om.getSelfParameter(), Type.getObjectType(className)),
+                                new ArgumentProvider(asm, om.getDurationParameter()) {
+                                    @Override
+                                    public void doProvide() {
+                                        MethodTrackingExpander.DURATION.insert(mv);
+                                    }
+                                }
+                        );*/
+    
+                        ArgumentProvider[] actionArgs = new ArgumentProvider[6];
+    
+                        actionArgs[0] = localVarArg(om.getReturnParameter(), probeRetType, retValIndex, boxReturnValue);
+//                        actionArgs[5] = localVarArg(vr.getArgIdx(0), THROWABLE_TYPE, throwableIndex);
+                        actionArgs[5] = constArg(throwableIndex, THROWABLE_TYPE);
+                        actionArgs[1] = constArg(om.getClassNameParameter(), className.replace('/', '.'));
+                        actionArgs[2] = constArg(om.getMethodParameter(), getName(om.isMethodFqn()));
+                        actionArgs[3] = selfArg(om.getSelfParameter(), Type.getObjectType(className));
+                        actionArgs[4] = new ArgumentProvider(asm, om.getDurationParameter()) {
+                            @Override
+                            public void doProvide() {
+                                MethodTrackingExpander.DURATION.insert(mv);
+                            }
+                        };
+    
+                        return actionArgs;
                     }
     
                     private ArgumentProvider[] buildArgsWithoutParas(int throwableIndex){
                         ArgumentProvider[] actionArgs = new ArgumentProvider[5];
-        
-//                        actionArgs[0] = constArg(throwableIndex, THROWABLE_TYPE); //localVarArg(vr.getArgIdx(0), THROWABLE_TYPE, throwableIndex);
-                        actionArgs[0] = constArg(om.getReturnParameter(), getReturnType());
+    
+                        actionArgs[0] = localVarArg(vr.getArgIdx(0), THROWABLE_TYPE, throwableIndex);
                         actionArgs[1] = constArg(om.getClassNameParameter(), className.replace('/', '.'));
                         actionArgs[2] = constArg(om.getMethodParameter(), getName(om.isMethodFqn()));
                         actionArgs[3] = selfArg(om.getSelfParameter(), Type.getObjectType(className));
@@ -859,6 +887,37 @@ public class Instrumentor extends ClassVisitor {
                             }
                         };
                         return actionArgs;
+                    }
+
+                    @Override
+                    protected void onErrorReturn() {
+                        if (vr.isValid()) {
+                            int throwableIndex = -1;
+
+                            MethodTrackingExpander.TEST_SAMPLE.insert(mv, MethodTrackingExpander.$TIMED);
+
+                            if (!vr.isAny()) {
+                                asm.dup();
+                                throwableIndex = storeAsNew();
+                            }
+    
+                            ArgumentProvider[] actionArgs;
+                            if (vr.isAny()) {
+                                actionArgs = buildArgsWithoutParas(throwableIndex);
+                            } else {
+                                actionArgs = loadArgsWithParas(throwableIndex);
+                            }
+    
+                            Label l = levelCheck(om, bcn.getClassName(true));
+                            loadArguments(vr, actionArgTypes, isStatic(), actionArgs);
+                            
+                            invokeBTraceAction(asm, om);
+                            if (l != null) {
+                                mv.visitLabel(l);
+                                insertFrameSameStack(l);
+                            }
+                            MethodTrackingExpander.ELSE_SAMPLE.insert(mv);
+                        }
                     }
 
                     private boolean generatingCode = false;
