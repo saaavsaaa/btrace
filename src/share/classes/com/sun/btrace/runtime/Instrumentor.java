@@ -847,7 +847,8 @@ public class Instrumentor extends ClassVisitor {
                     private ArgumentProvider[] buildArgsWithoutParas(int throwableIndex){
                         ArgumentProvider[] actionArgs = new ArgumentProvider[5];
         
-                        actionArgs[0] = constArg(throwableIndex, THROWABLE_TYPE); //localVarArg(vr.getArgIdx(0), THROWABLE_TYPE, throwableIndex);
+//                        actionArgs[0] = constArg(throwableIndex, THROWABLE_TYPE); //localVarArg(vr.getArgIdx(0), THROWABLE_TYPE, throwableIndex);
+                        actionArgs[0] = constArg(om.getReturnParameter(), getReturnType());
                         actionArgs[1] = constArg(om.getClassNameParameter(), className.replace('/', '.'));
                         actionArgs[2] = constArg(om.getMethodParameter(), getName(om.isMethodFqn()));
                         actionArgs[3] = selfArg(om.getSelfParameter(), Type.getObjectType(className));
