@@ -238,6 +238,7 @@ public abstract class InstrumentorTestBase {
     }
 
     private String diff(String modified, String orig) throws IOException {
+        System.out.println(modified + " | " + orig);
         StringBuilder sb = new StringBuilder();
 
         String[] modArr = modified.split("\\n");

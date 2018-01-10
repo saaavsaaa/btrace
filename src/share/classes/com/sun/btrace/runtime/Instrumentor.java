@@ -810,8 +810,7 @@ public class Instrumentor extends ClassVisitor {
                     {
                         addExtraTypeInfo(om.getSelfParameter(), Type.getObjectType(className));
 //                        vr = validateArguments(om, actionArgTypes, new Type[]{THROWABLE_TYPE});
-    
-                        addExtraTypeInfo(om.getReturnParameter(), getReturnType());
+
                         vr = validateArguments(om, actionArgTypes, Type.getArgumentTypes(getDescriptor()));
                     }
 
