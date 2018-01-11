@@ -809,8 +809,17 @@ public class Instrumentor extends ClassVisitor {
                     ValidationResult vr;
                     {
                         addExtraTypeInfo(om.getSelfParameter(), Type.getObjectType(className));
-//                        vr = validateArguments(om, actionArgTypes, new Type[]{THROWABLE_TYPE});
-                        vr = validateArguments(om, actionArgTypes, Type.getArgumentTypes(getDescriptor()));
+
+                        if (om.getReturnParameter() == -1){
+                            vr = validateArguments(om, actionArgTypes, new Type[]{THROWABLE_TYPE});
+                        } else {
+                            Type[] sources = Type.getArgumentTypes(getDescriptor());
+                            Type[] types = new Type[sources.length + 1];
+                            types[sources.length] = THROWABLE_TYPE;
+                            System.arraycopy(sources, 0, types, 0, sources.length);
+//                            vr = validateArguments(om, actionArgTypes, types);
+                            vr = validateArguments(om, actionArgTypes, sources);
+                        }
                     }
     
                     private ArgumentProvider[] loadArgsWithParas(int throwableIndex){
@@ -839,27 +848,12 @@ public class Instrumentor extends ClassVisitor {
                             }
                             retValIndex = storeAsNew();
                         }
-                        
-                        /*loadArguments(
-                                vr, actionArgTypes, isStatic(),
-                                constArg(throwableIndex, THROWABLE_TYPE),
-                                constArg(om.getMethodParameter(), getName(om.isMethodFqn())),
-                                constArg(om.getClassNameParameter(), className.replace("/", ".")),
-                                localVarArg(om.getReturnParameter(), probeRetType, retValIndex, boxReturnValue),
-                                selfArg(om.getSelfParameter(), Type.getObjectType(className)),
-                                new ArgumentProvider(asm, om.getDurationParameter()) {
-                                    @Override
-                                    public void doProvide() {
-                                        MethodTrackingExpander.DURATION.insert(mv);
-                                    }
-                                }
-                        );*/
     
-                        ArgumentProvider[] actionArgs = new ArgumentProvider[6];
+                        ArgumentProvider[] actionArgs = new ArgumentProvider[5];
     
                         actionArgs[0] = localVarArg(om.getReturnParameter(), probeRetType, retValIndex, boxReturnValue);
 //                        actionArgs[5] = localVarArg(vr.getArgIdx(0), THROWABLE_TYPE, throwableIndex);
-                        actionArgs[5] = constArg(throwableIndex, THROWABLE_TYPE);
+//                        actionArgs[5] = constArg(throwableIndex, THROWABLE_TYPE);
                         actionArgs[1] = constArg(om.getClassNameParameter(), className.replace('/', '.'));
                         actionArgs[2] = constArg(om.getMethodParameter(), getName(om.isMethodFqn()));
                         actionArgs[3] = selfArg(om.getSelfParameter(), Type.getObjectType(className));
@@ -902,12 +896,11 @@ public class Instrumentor extends ClassVisitor {
                             }
     
                             ArgumentProvider[] actionArgs;
-                            if (vr.isAny()) {
+                            if (om.getReturnParameter() == -1) {
                                 actionArgs = buildArgsWithoutParas(throwableIndex);
                             } else {
                                 actionArgs = loadArgsWithParas(throwableIndex);
                             }
-    
                             Label l = levelCheck(om, bcn.getClassName(true));
                             loadArguments(vr, actionArgTypes, isStatic(), actionArgs);
                             
