@@ -553,6 +553,10 @@ public class MethodInstrumentor extends BTraceMethodVisitor {
             }
             specialArgsCount++;
         }
+    
+//        if (args1.length == 1 && args1[0].equals(THROWABLE_TYPE) && args1[0].equals(args2[0])){
+//
+//        }
 
         Type[] cleansedArgArray = new Type[actionArgTypes.length - specialArgsCount];
         int[] cleansedArgIndex = new int[cleansedArgArray.length];

@@ -809,16 +809,65 @@ public class Instrumentor extends ClassVisitor {
                     ValidationResult vr;
                     {
                         addExtraTypeInfo(om.getSelfParameter(), Type.getObjectType(className));
-
-                        if (om.getReturnParameter() == -1){
+    
+                        Type[] sources = Type.getArgumentTypes(getDescriptor());
+                        if (sources.length == 0){
                             vr = validateArguments(om, actionArgTypes, new Type[]{THROWABLE_TYPE});
                         } else {
-                            Type[] sources = Type.getArgumentTypes(getDescriptor());
+//                            Type[] sources = Type.getArgumentTypes(getDescriptor());
                             Type[] types = new Type[sources.length + 1];
                             types[sources.length] = THROWABLE_TYPE;
                             System.arraycopy(sources, 0, types, 0, sources.length);
-//                            vr = validateArguments(om, actionArgTypes, types);
-                            vr = validateArguments(om, actionArgTypes, sources);
+                            
+                            
+                            /*
+                            *
+                            * 方法的参数，用正常方法测试一下
+看看为什么多出了多余的类型
+
+vr = validateArguments(om, actionArgTypes, types);左右类型数组匹配未成功
+异常方法功能未实现，在MethodInstrumentor中判断Throw类型，注意其他类型的验证
+
+
+InstrumentUtils
+public static boolean isAssignable(Type left, Type right, ClassLoader cl, boolean exactTypeCheck) {
+                            * */
+                            vr = validateArguments(om, actionArgTypes, types);
+//                            vr = validateArguments(om, actionArgTypes, sources);
+                        }
+                    }
+    
+                    @Override
+                    protected void onErrorReturn() {
+                        if (vr.isValid()) {
+                            int throwableIndex = -1;
+            
+                            MethodTrackingExpander.TEST_SAMPLE.insert(mv, MethodTrackingExpander.$TIMED);
+            
+                            if (!vr.isAny()) {
+                                asm.dup();
+                                throwableIndex = storeAsNew();
+                            }
+            
+                            ArgumentProvider[] actionArgs;
+                            Label l;
+                            Type[] sources = Type.getArgumentTypes(getDescriptor());
+                            if (sources.length == 0){
+                                actionArgs = buildArgsWithoutParas(throwableIndex);
+                                l = levelCheck(om, bcn.getClassName(true));
+                                loadArguments(actionArgs);
+                            } else {
+                                actionArgs = loadArgsWithParas(throwableIndex);
+                                l = levelCheck(om, bcn.getClassName(true));
+                                loadArguments(vr, actionArgTypes, isStatic(), actionArgs);
+                            }
+    
+                            invokeBTraceAction(asm, om);
+                            if (l != null) {
+                                mv.visitLabel(l);
+                                insertFrameSameStack(l);
+                            }
+                            MethodTrackingExpander.ELSE_SAMPLE.insert(mv);
                         }
                     }
     
@@ -851,9 +900,9 @@ public class Instrumentor extends ClassVisitor {
     
                         ArgumentProvider[] actionArgs = new ArgumentProvider[5];
     
-                        actionArgs[0] = localVarArg(om.getReturnParameter(), probeRetType, retValIndex, boxReturnValue);
-//                        actionArgs[5] = localVarArg(vr.getArgIdx(0), THROWABLE_TYPE, throwableIndex);
-//                        actionArgs[5] = constArg(throwableIndex, THROWABLE_TYPE);
+                        actionArgs[5] = localVarArg(om.getReturnParameter(), probeRetType, retValIndex, boxReturnValue);
+                        actionArgs[0] = localVarArg(vr.getArgIdx(0), THROWABLE_TYPE, throwableIndex);
+//                        actionArgs[0] = constArg(throwableIndex, THROWABLE_TYPE);
                         actionArgs[1] = constArg(om.getClassNameParameter(), className.replace('/', '.'));
                         actionArgs[2] = constArg(om.getMethodParameter(), getName(om.isMethodFqn()));
                         actionArgs[3] = selfArg(om.getSelfParameter(), Type.getObjectType(className));
@@ -881,45 +930,6 @@ public class Instrumentor extends ClassVisitor {
                             }
                         };
                         return actionArgs;
-                    }
-
-                    @Override
-                    protected void onErrorReturn() {
-                        if (vr.isValid()) {
-                            int throwableIndex = -1;
-
-                            MethodTrackingExpander.TEST_SAMPLE.insert(mv, MethodTrackingExpander.$TIMED);
-
-                            if (!vr.isAny()) {
-                                asm.dup();
-                                throwableIndex = storeAsNew();
-                            }
-    
-                            ArgumentProvider[] actionArgs;
-                            if (om.getReturnParameter() == -1) {
-                                actionArgs = buildArgsWithoutParas(throwableIndex);
-                                Label l = levelCheck(om, bcn.getClassName(true));
-                                loadArguments(actionArgs);
-    
-                                invokeBTraceAction(asm, om);
-                                if (l != null) {
-                                    mv.visitLabel(l);
-                                    insertFrameSameStack(l);
-                                }
-                                MethodTrackingExpander.ELSE_SAMPLE.insert(mv);
-                            } else {
-                                actionArgs = loadArgsWithParas(throwableIndex);
-                                Label l = levelCheck(om, bcn.getClassName(true));
-                                loadArguments(vr, actionArgTypes, isStatic(), actionArgs);
-    
-                                invokeBTraceAction(asm, om);
-                                MethodTrackingExpander.ELSE_SAMPLE.insert(mv);
-                                if (l != null) {
-                                    mv.visitLabel(l);
-                                    insertFrameSameStack(l);
-                                }
-                            }
-                        }
                     }
 
                     private boolean generatingCode = false;
