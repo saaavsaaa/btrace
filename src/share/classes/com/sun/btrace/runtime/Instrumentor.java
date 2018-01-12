@@ -898,18 +898,27 @@ public class Instrumentor extends ClassVisitor {
                             ArgumentProvider[] actionArgs;
                             if (om.getReturnParameter() == -1) {
                                 actionArgs = buildArgsWithoutParas(throwableIndex);
+                                Label l = levelCheck(om, bcn.getClassName(true));
+                                loadArguments(actionArgs);
+    
+                                invokeBTraceAction(asm, om);
+                                if (l != null) {
+                                    mv.visitLabel(l);
+                                    insertFrameSameStack(l);
+                                }
+                                MethodTrackingExpander.ELSE_SAMPLE.insert(mv);
                             } else {
                                 actionArgs = loadArgsWithParas(throwableIndex);
+                                Label l = levelCheck(om, bcn.getClassName(true));
+                                loadArguments(vr, actionArgTypes, isStatic(), actionArgs);
+    
+                                invokeBTraceAction(asm, om);
+                                MethodTrackingExpander.ELSE_SAMPLE.insert(mv);
+                                if (l != null) {
+                                    mv.visitLabel(l);
+                                    insertFrameSameStack(l);
+                                }
                             }
-                            Label l = levelCheck(om, bcn.getClassName(true));
-                            loadArguments(vr, actionArgTypes, isStatic(), actionArgs);
-                            
-                            invokeBTraceAction(asm, om);
-                            if (l != null) {
-                                mv.visitLabel(l);
-                                insertFrameSameStack(l);
-                            }
-                            MethodTrackingExpander.ELSE_SAMPLE.insert(mv);
                         }
                     }
 
