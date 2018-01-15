@@ -809,32 +809,34 @@ public class Instrumentor extends ClassVisitor {
                     ValidationResult vr;
                     {
                         addExtraTypeInfo(om.getSelfParameter(), Type.getObjectType(className));
-    
+
                         Type[] sources = Type.getArgumentTypes(getDescriptor());
                         if (sources.length == 0){
                             vr = validateArguments(om, actionArgTypes, new Type[]{THROWABLE_TYPE});
                         } else {
-//                            Type[] sources = Type.getArgumentTypes(getDescriptor());
-                            Type[] types = new Type[sources.length + 1];
-                            types[sources.length] = THROWABLE_TYPE;
-                            System.arraycopy(sources, 0, types, 0, sources.length);
-                            
-                            
+//                            Type[] types = new Type[sources.length + 1];
+//                            types[0] = THROWABLE_TYPE;
+//                            System.arraycopy(sources, 0, types, 1, sources.length);
+
                             /*
-                            *
-                            * 方法的参数，用正常方法测试一下
-看看为什么多出了多余的类型
-
-vr = validateArguments(om, actionArgTypes, types);左右类型数组匹配未成功
-异常方法功能未实现，在MethodInstrumentor中判断Throw类型，注意其他类型的验证
-
-
-InstrumentUtils
-public static boolean isAssignable(Type left, Type right, ClassLoader cl, boolean exactTypeCheck) {
+                            * 从脚本方法的参数中排除btrace自身的参数，将剩下的参数与被拦截方法的参数对比
+                            * 单元测试中脚本都只保留了一个抛出的异常参数而args方法本身有4个参数，于是在使用保留方法参数功能时原代码会导致参数不匹配
                             * */
-                            vr = validateArguments(om, actionArgTypes, types);
-//                            vr = validateArguments(om, actionArgTypes, sources);
+                            System.out.println("om.getTargetDescriptor():" + om.getTargetDescriptor()); //脚本参数
+                            System.out.println("getDescriptor():" + getDescriptor()); //被拦截的方法参数
+                            if (om.getMethodParameter() == -1){
+                                vr = validateArguments(om, mergeArgsType(actionArgTypes, sources), sources);
+                            } else {
+                                vr = validateArguments(om, actionArgTypes, sources);
+                            }
                         }
+                    }
+                    
+                    private Type[] mergeArgsType(Type[] actionArgTypes, Type[] sources){
+                        Type[] argTypes = new Type[actionArgTypes.length + sources.length -1]; // - throw
+                        System.arraycopy(actionArgTypes, 0, argTypes, 0, actionArgTypes.length - 1);
+                        System.arraycopy(sources, 0, argTypes, actionArgTypes.length - 1, sources.length);
+                        return argTypes;
                     }
     
                     @Override
@@ -859,9 +861,10 @@ public static boolean isAssignable(Type left, Type right, ClassLoader cl, boolea
                             } else {
                                 actionArgs = loadArgsWithParas(throwableIndex);
                                 l = levelCheck(om, bcn.getClassName(true));
-                                loadArguments(vr, actionArgTypes, isStatic(), actionArgs);
+                                
+                                //原参数+异常参数
+                                loadArguments(vr, mergeArgsType(actionArgTypes, sources), isStatic(), actionArgs);
                             }
-    
                             invokeBTraceAction(asm, om);
                             if (l != null) {
                                 mv.visitLabel(l);
@@ -875,6 +878,8 @@ public static boolean isAssignable(Type left, Type right, ClassLoader cl, boolea
                         Type probeRetType = getReturnType();
                         boolean boxReturnValue = true;
                         int retValIndex = -1;
+    
+                        // <editor-fold defaultstate="collapsed" desc="aaa">
                         if (om.getReturnParameter() != -1) {
                             Type retType = Type.getArgumentTypes(om.getTargetDescriptor())[om.getReturnParameter()];
                             if (probeRetType.equals(Type.VOID_TYPE)) {
@@ -897,12 +902,13 @@ public static boolean isAssignable(Type left, Type right, ClassLoader cl, boolea
                             }
                             retValIndex = storeAsNew();
                         }
+                        // </editor-fold>
     
                         ArgumentProvider[] actionArgs = new ArgumentProvider[5];
     
-                        actionArgs[5] = localVarArg(om.getReturnParameter(), probeRetType, retValIndex, boxReturnValue);
-                        actionArgs[0] = localVarArg(vr.getArgIdx(0), THROWABLE_TYPE, throwableIndex);
-//                        actionArgs[0] = constArg(throwableIndex, THROWABLE_TYPE);
+//                        actionArgs[0] = localVarArg(om.getReturnParameter(), probeRetType, retValIndex, boxReturnValue);
+//                        actionArgs[0] = localVarArg(vr.getArgIdx(0), THROWABLE_TYPE, throwableIndex);
+                        actionArgs[0] = constArg(throwableIndex, THROWABLE_TYPE);
                         actionArgs[1] = constArg(om.getClassNameParameter(), className.replace('/', '.'));
                         actionArgs[2] = constArg(om.getMethodParameter(), getName(om.isMethodFqn()));
                         actionArgs[3] = selfArg(om.getSelfParameter(), Type.getObjectType(className));
