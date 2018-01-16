@@ -812,7 +812,7 @@ public class Instrumentor extends ClassVisitor {
 
                         Type[] sources = Type.getArgumentTypes(getDescriptor());
                         System.out.println("getMethodParameter():" + om.getMethodParameter());
-                        if (om.getMethodParameter() == -1){
+                        if (sources.length == 0 || om.getMethodParameter() == -1){
                             vr = validateArguments(om, actionArgTypes, new Type[]{THROWABLE_TYPE});
                         } else {
 //                            Type[] types = new Type[sources.length + 1];
@@ -829,12 +829,12 @@ public class Instrumentor extends ClassVisitor {
                         }
                     }
                     
-                    private Type[] mergeArgsType(Type[] actionArgTypes, Type[] sources){
+                    /*private Type[] mergeArgsType(Type[] actionArgTypes, Type[] sources){
                         Type[] argTypes = new Type[actionArgTypes.length + sources.length -1]; // - throw
                         System.arraycopy(actionArgTypes, 0, argTypes, 0, actionArgTypes.length - 1);
                         System.arraycopy(sources, 0, argTypes, actionArgTypes.length - 1, sources.length);
                         return argTypes;
-                    }
+                    }*/
     
                     @Override
                     protected void onErrorReturn() {
@@ -850,7 +850,8 @@ public class Instrumentor extends ClassVisitor {
             
                             ArgumentProvider[] actionArgs;
                             Label l;
-                            if (om.getMethodParameter() == -1){
+                            Type[] sources = Type.getArgumentTypes(getDescriptor());
+                            if (sources.length == 0 || om.getMethodParameter() == -1){
                                 actionArgs = buildArgsWithoutParas(throwableIndex);
                                 l = levelCheck(om, bcn.getClassName(true));
                                 loadArguments(actionArgs);
@@ -871,11 +872,11 @@ public class Instrumentor extends ClassVisitor {
                     }
     
                     private ArgumentProvider[] loadArgsWithParas(int throwableIndex){
-                        Type probeRetType = getReturnType();
+                        // <editor-fold defaultstate="collapsed" desc="aaa">
+                        /*Type probeRetType = getReturnType();
                         boolean boxReturnValue = true;
                         int retValIndex = -1;
-    
-                        // <editor-fold defaultstate="collapsed" desc="aaa">
+                        
                         if (om.getReturnParameter() != -1) {
                             Type retType = Type.getArgumentTypes(om.getTargetDescriptor())[om.getReturnParameter()];
                             if (probeRetType.equals(Type.VOID_TYPE)) {
@@ -897,14 +898,14 @@ public class Instrumentor extends ClassVisitor {
                                 boxReturnValue = TypeUtils.isAnyType(retType);
                             }
                             retValIndex = storeAsNew();
-                        }
+                        }*/
                         // </editor-fold>
     
                         ArgumentProvider[] actionArgs = new ArgumentProvider[5];
     
-                        actionArgs[0] = localVarArg(om.getReturnParameter(), probeRetType, retValIndex, boxReturnValue);
+//                        actionArgs[0] = localVarArg(om.getReturnParameter(), probeRetType, retValIndex, boxReturnValue);
 //                        actionArgs[0] = localVarArg(vr.getArgIdx(0), THROWABLE_TYPE, throwableIndex);
-//                        actionArgs[0] = constArg(throwableIndex, THROWABLE_TYPE);
+                        actionArgs[0] = constArg(throwableIndex, THROWABLE_TYPE);
                         actionArgs[1] = constArg(om.getClassNameParameter(), className.replace('/', '.'));
                         actionArgs[2] = constArg(om.getMethodParameter(), getName(om.isMethodFqn()));
                         actionArgs[3] = selfArg(om.getSelfParameter(), Type.getObjectType(className));
