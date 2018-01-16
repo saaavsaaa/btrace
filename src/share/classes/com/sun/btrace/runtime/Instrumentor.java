@@ -811,7 +811,8 @@ public class Instrumentor extends ClassVisitor {
                         addExtraTypeInfo(om.getSelfParameter(), Type.getObjectType(className));
 
                         Type[] sources = Type.getArgumentTypes(getDescriptor());
-                        if (sources.length == 0){
+                        System.out.println("getMethodParameter():" + om.getMethodParameter());
+                        if (sources.length == 0 || om.getMethodParameter() == -1){
                             vr = validateArguments(om, actionArgTypes, new Type[]{THROWABLE_TYPE});
                         } else {
 //                            Type[] types = new Type[sources.length + 1];
@@ -824,11 +825,7 @@ public class Instrumentor extends ClassVisitor {
                             * */
                             System.out.println("om.getTargetDescriptor():" + om.getTargetDescriptor()); //脚本参数
                             System.out.println("getDescriptor():" + getDescriptor()); //被拦截的方法参数
-                            if (om.getMethodParameter() == -1){
-                                vr = validateArguments(om, mergeArgsType(actionArgTypes, sources), sources);
-                            } else {
-                                vr = validateArguments(om, actionArgTypes, sources);
-                            }
+                            vr = validateArguments(om, actionArgTypes, sources);
                         }
                     }
                     
@@ -854,7 +851,7 @@ public class Instrumentor extends ClassVisitor {
                             ArgumentProvider[] actionArgs;
                             Label l;
                             Type[] sources = Type.getArgumentTypes(getDescriptor());
-                            if (sources.length == 0){
+                            if (sources.length == 0 || om.getMethodParameter() == -1){
                                 actionArgs = buildArgsWithoutParas(throwableIndex);
                                 l = levelCheck(om, bcn.getClassName(true));
                                 loadArguments(actionArgs);
@@ -863,7 +860,7 @@ public class Instrumentor extends ClassVisitor {
                                 l = levelCheck(om, bcn.getClassName(true));
                                 
                                 //原参数+异常参数
-                                loadArguments(vr, mergeArgsType(actionArgTypes, sources), isStatic(), actionArgs);
+                                loadArguments(vr, actionArgTypes, isStatic(), actionArgs);
                             }
                             invokeBTraceAction(asm, om);
                             if (l != null) {
@@ -906,9 +903,9 @@ public class Instrumentor extends ClassVisitor {
     
                         ArgumentProvider[] actionArgs = new ArgumentProvider[5];
     
-//                        actionArgs[0] = localVarArg(om.getReturnParameter(), probeRetType, retValIndex, boxReturnValue);
+                        actionArgs[0] = localVarArg(om.getReturnParameter(), probeRetType, retValIndex, boxReturnValue);
 //                        actionArgs[0] = localVarArg(vr.getArgIdx(0), THROWABLE_TYPE, throwableIndex);
-                        actionArgs[0] = constArg(throwableIndex, THROWABLE_TYPE);
+//                        actionArgs[0] = constArg(throwableIndex, THROWABLE_TYPE);
                         actionArgs[1] = constArg(om.getClassNameParameter(), className.replace('/', '.'));
                         actionArgs[2] = constArg(om.getMethodParameter(), getName(om.isMethodFqn()));
                         actionArgs[3] = selfArg(om.getSelfParameter(), Type.getObjectType(className));
