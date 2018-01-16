@@ -812,7 +812,7 @@ public class Instrumentor extends ClassVisitor {
 
                         Type[] sources = Type.getArgumentTypes(getDescriptor());
                         System.out.println("getMethodParameter():" + om.getMethodParameter());
-                        if (sources.length == 0 || om.getMethodParameter() == -1){
+                        if (om.getMethodParameter() == -1){
                             vr = validateArguments(om, actionArgTypes, new Type[]{THROWABLE_TYPE});
                         } else {
 //                            Type[] types = new Type[sources.length + 1];
@@ -850,8 +850,7 @@ public class Instrumentor extends ClassVisitor {
             
                             ArgumentProvider[] actionArgs;
                             Label l;
-                            Type[] sources = Type.getArgumentTypes(getDescriptor());
-                            if (sources.length == 0 || om.getMethodParameter() == -1){
+                            if (om.getMethodParameter() == -1){
                                 actionArgs = buildArgsWithoutParas(throwableIndex);
                                 l = levelCheck(om, bcn.getClassName(true));
                                 loadArguments(actionArgs);
