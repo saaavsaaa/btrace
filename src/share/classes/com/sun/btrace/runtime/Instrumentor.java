@@ -809,32 +809,16 @@ public class Instrumentor extends ClassVisitor {
                     ValidationResult vr;
                     {
                         addExtraTypeInfo(om.getSelfParameter(), Type.getObjectType(className));
-
+//                        vr = validateArguments(om, actionArgTypes, Type.getArgumentTypes(getDescriptor()));
+    
+    
                         Type[] sources = Type.getArgumentTypes(getDescriptor());
-                        System.out.println("getMethodParameter():" + om.getMethodParameter());
                         if (sources.length == 0 || om.getMethodParameter() == -1){
                             vr = validateArguments(om, actionArgTypes, new Type[]{THROWABLE_TYPE});
                         } else {
-//                            Type[] types = new Type[sources.length + 1];
-//                            types[0] = THROWABLE_TYPE;
-//                            System.arraycopy(sources, 0, types, 1, sources.length);
-
-                            /*
-                            * 从脚本方法的参数中排除btrace自身的参数，将剩下的参数与被拦截方法的参数对比
-                            * 单元测试中脚本都只保留了一个抛出的异常参数而args方法本身有4个参数，于是在使用保留方法参数功能时原代码会导致参数不匹配
-                            * */
-                            System.out.println("om.getTargetDescriptor():" + om.getTargetDescriptor()); //脚本参数
-                            System.out.println("getDescriptor():" + getDescriptor()); //被拦截的方法参数
-                            vr = validateArguments(om, actionArgTypes, sources);
+                            vr = validateArguments(om, actionArgTypes, Type.getArgumentTypes(getDescriptor()));
                         }
                     }
-                    
-                    /*private Type[] mergeArgsType(Type[] actionArgTypes, Type[] sources){
-                        Type[] argTypes = new Type[actionArgTypes.length + sources.length -1]; // - throw
-                        System.arraycopy(actionArgTypes, 0, argTypes, 0, actionArgTypes.length - 1);
-                        System.arraycopy(sources, 0, argTypes, actionArgTypes.length - 1, sources.length);
-                        return argTypes;
-                    }*/
     
                     @Override
                     protected void onErrorReturn() {
@@ -873,7 +857,7 @@ public class Instrumentor extends ClassVisitor {
     
                     private ArgumentProvider[] loadArgsWithParas(int throwableIndex){
                         // <editor-fold defaultstate="collapsed" desc="原返回值">
-                        /*Type probeRetType = getReturnType();
+                        Type probeRetType = getReturnType();
                         boolean boxReturnValue = true;
                         int retValIndex = -1;
                         
@@ -898,14 +882,14 @@ public class Instrumentor extends ClassVisitor {
                                 boxReturnValue = TypeUtils.isAnyType(retType);
                             }
                             retValIndex = storeAsNew();
-                        }*/
+                        }
                         // </editor-fold>
     
                         ArgumentProvider[] actionArgs = new ArgumentProvider[5];
     
-//                        actionArgs[0] = localVarArg(om.getReturnParameter(), probeRetType, retValIndex, boxReturnValue);
+                        actionArgs[0] = localVarArg(om.getReturnParameter(), probeRetType, retValIndex, boxReturnValue);
 //                        actionArgs[0] = localVarArg(vr.getArgIdx(0), THROWABLE_TYPE, throwableIndex);
-                        actionArgs[0] = constArg(throwableIndex, THROWABLE_TYPE);
+//                        actionArgs[0] = constArg(throwableIndex, THROWABLE_TYPE);
                         actionArgs[1] = constArg(om.getClassNameParameter(), className.replace('/', '.'));
                         actionArgs[2] = constArg(om.getMethodParameter(), getName(om.isMethodFqn()));
                         actionArgs[3] = selfArg(om.getSelfParameter(), Type.getObjectType(className));

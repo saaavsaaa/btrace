@@ -476,8 +476,24 @@ public class MethodInstrumentor extends BTraceMethodVisitor {
     protected String getSuperClz() {
         return superClz;
     }
-
+    
+    
+    private static void print(Type[] args, String type){
+        try {
+            System.out.println("=================================" + type);
+            for (Type arg : args) {
+                System.out.println("print type :" + arg.getDescriptor());
+            }
+        } catch (Throwable throwable){
+            System.out.println("eee:" + throwable.getMessage());
+        }
+    }
+    
     protected ValidationResult validateArguments(OnMethod om, Type[] actionArgTypes, Type[] methodArgTypes) {
+        print(actionArgTypes, "actionArgTypes");
+        print(methodArgTypes, "methodArgTypes");
+        System.out.println("validateArguments begin====================================================");
+        
         int specialArgsCount = 0;
 
         if (om.getSelfParameter() != -1) {
@@ -553,10 +569,6 @@ public class MethodInstrumentor extends BTraceMethodVisitor {
             }
             specialArgsCount++;
         }
-    
-//        if (args1.length == 1 && args1[0].equals(THROWABLE_TYPE) && args1[0].equals(args2[0])){
-//
-//        }
 
         Type[] cleansedArgArray = new Type[actionArgTypes.length - specialArgsCount];
         int[] cleansedArgIndex = new int[cleansedArgArray.length];
@@ -575,6 +587,16 @@ public class MethodInstrumentor extends BTraceMethodVisitor {
                 counter++;
             }
         }
+        
+/*        try {
+            throw new IllegalArgumentException("111111111111111111");
+        }catch (IllegalArgumentException ee){
+            StackTraceElement[] ss = ee.getStackTrace();
+            for (StackTraceElement s : ss) {
+                System.out.println("eeeeeeeeeee : " + s.toString());
+            }
+        }*/
+        
         if (cleansedArgArray.length == 0) {
             return ValidationResult.ANY;
         } else {

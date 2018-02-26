@@ -85,6 +85,10 @@ public final class Main {
     }
 
     public static void main(String[] args) {
+        String tid = JPSGet.get();
+        String javaPath = "/home/aaa/Github/warn-report/src/main/java/report/btrace/TraceAppRSA.java";
+        args = new String[]{tid, javaPath};
+        
         int port = BTRACE_DEFAULT_PORT;
         String classPath = ".";
         String includePath = null;

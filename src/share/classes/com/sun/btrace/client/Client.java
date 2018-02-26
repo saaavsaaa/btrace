@@ -238,11 +238,12 @@ public class Client {
     public void attach(String pid, String sysCp, String bootCp) throws IOException {
         try {
             String agentPath = "/btrace-agent.jar";
-            String tmp = Client.class.getClassLoader().getResource("com/sun/btrace").toString();
-            tmp = tmp.substring(0, tmp.indexOf('!'));
-            tmp = tmp.substring("jar:".length(), tmp.lastIndexOf('/'));
-            agentPath = tmp + agentPath;
-            agentPath = new File(new URI(agentPath)).getAbsolutePath();
+//            String tmp = Client.class.getClassLoader().getResource("com/sun/btrace").toString();
+//            tmp = tmp.substring(0, tmp.indexOf('!'));
+//            tmp = tmp.substring("jar:".length(), tmp.lastIndexOf('/'));
+//            agentPath = tmp + agentPath;
+//            agentPath = new File(new URI(agentPath)).getAbsolutePath();
+            agentPath = "/home/aaa/Github/btrace/build/btrace-agent.jar";
             attach(pid, agentPath, sysCp, bootCp);
         } catch (RuntimeException re) {
             throw re;
@@ -295,6 +296,7 @@ public class Client {
             if (debug) {
                 agentArgs += ",debug=true";
             }
+            agentArgs += ",debug=true,stdout=true";
             if (trusted) {
                 agentArgs += ",trusted=true";
             }

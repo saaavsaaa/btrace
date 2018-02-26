@@ -328,7 +328,7 @@ public abstract class InstrumentorTestBase {
 
     private byte[] loadFile(String path) throws IOException {
         File f = new File("./build/classes/" + path);
-        try (InputStream is = new FileInputStream(f)) {
+        try (InputStream is = new FileInputStream(f.getAbsoluteFile())) {
             byte[] data = loadFile(is);
             return data;
         }
