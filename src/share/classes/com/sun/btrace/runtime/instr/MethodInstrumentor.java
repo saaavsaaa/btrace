@@ -588,15 +588,6 @@ public class MethodInstrumentor extends BTraceMethodVisitor {
             }
         }
         
-/*        try {
-            throw new IllegalArgumentException("111111111111111111");
-        }catch (IllegalArgumentException ee){
-            StackTraceElement[] ss = ee.getStackTrace();
-            for (StackTraceElement s : ss) {
-                System.out.println("eeeeeeeeeee : " + s.toString());
-            }
-        }*/
-        
         if (cleansedArgArray.length == 0) {
             return ValidationResult.ANY;
         } else {

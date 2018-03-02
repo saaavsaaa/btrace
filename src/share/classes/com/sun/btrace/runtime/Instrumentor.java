@@ -245,6 +245,7 @@ public class Instrumentor extends ClassVisitor {
         final OnMethod om, MethodVisitor mv,
         final MethodInstrumentorHelper mHelper,
         final int access, final String name, final String desc) {
+        
         final Location loc = om.getLocation();
         final Where where = loc.getWhere();
         final Type[] actionArgTypes = Type.getArgumentTypes(om.getTargetDescriptor());
@@ -806,14 +807,20 @@ public class Instrumentor extends ClassVisitor {
             case ERROR:
                 // <editor-fold defaultstate="collapsed" desc="Error Instrumentor">
                 ErrorReturnInstrumentor eri = new ErrorReturnInstrumentor(cl, mv, mHelper, className, superName, access, name, desc) {
+                    boolean useArgs = true;
                     ValidationResult vr;
                     {
                         addExtraTypeInfo(om.getSelfParameter(), Type.getObjectType(className));
 //                        vr = validateArguments(om, actionArgTypes, Type.getArgumentTypes(getDescriptor()));
-    
-    
-                        Type[] sources = Type.getArgumentTypes(getDescriptor());
-                        if (sources.length == 0 || om.getMethodParameter() == -1){
+                        
+                        if (getDescriptor().indexOf("()") > 0) {
+                            String sourceArgs = getDescriptor();
+                            int rightSide = sourceArgs.indexOf(")");
+                            String argStr = sourceArgs.substring(1, rightSide);
+                            useArgs = numActionArgs == 0 || !om.getTargetDescriptor().contains(argStr);
+                        }
+                        
+                        if (useArgs){
                             vr = validateArguments(om, actionArgTypes, new Type[]{THROWABLE_TYPE});
                         } else {
                             vr = validateArguments(om, actionArgTypes, Type.getArgumentTypes(getDescriptor()));
@@ -834,8 +841,8 @@ public class Instrumentor extends ClassVisitor {
             
                             ArgumentProvider[] actionArgs;
                             Label l;
-                            Type[] sources = Type.getArgumentTypes(getDescriptor());
-                            if (sources.length == 0 || om.getMethodParameter() == -1){
+//                            Type[] sources = Type.getArgumentTypes(getDescriptor());
+                            if (useArgs /*sources.length == 0*/){
                                 actionArgs = buildArgsWithoutParas(throwableIndex);
                                 l = levelCheck(om, bcn.getClassName(true));
                                 loadArguments(actionArgs);

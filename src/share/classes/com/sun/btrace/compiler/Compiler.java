@@ -107,6 +107,7 @@ public class Compiler {
     // simple test main
     @SuppressWarnings("DefaultCharset")
     public static void main(String[] args) throws Exception {
+//        args = new String[]{"-cp", "/home/aaa/Github/btrace/new", "-d", "/home/aaa/Github/btrace/out", "/home/aaa/Github/btrace/new/ArgsDurationErrAAA.java", "/home/aaa/Github/btrace/new/level/ArgsDurationErrAAA.java"};
         if (args.length == 0) {
             usage();
         }

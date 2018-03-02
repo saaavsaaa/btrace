@@ -5727,4 +5727,111 @@ public class InstrumentorTest extends InstrumentorTestBase {
             "MAXSTACK = 6"
         );
     }
+    
+    
+    
+    
+    
+    
+    
+    /*@Test
+    public void methodEntryArgsDurationErrAAA() throws Exception {
+        loadTargetClass("OnMethodTest");
+        transform("onmethod/ArgsDurationErrAAA");
+        checkTransformation(
+                "LCONST_0\n" +
+                        "LSTORE 6\n" +
+                        "INVOKESTATIC java/lang/System.nanoTime ()J\n" +
+                        "LSTORE 8\n" +
+                        "INVOKESTATIC java/lang/System.nanoTime ()J\n" +
+                        "LLOAD 8\n" +
+                        "LSUB\n" +
+                        "LSTORE 6\n" +
+                        "DUP2\n" +
+                        "LSTORE 10\n" +
+                        "ALOAD 0\n" +
+                        "LLOAD 10\n" +
+                        "LLOAD 6\n" +
+                        "ALOAD 1\n" +
+                        "LLOAD 2\n" +
+                        "ALOAD 4\n" +
+                        "ALOAD 5\n" +
+                        "INVOKESTATIC resources/OnMethodTest.$btrace$traces$onmethod$ArgsDurationErrAAA$args2 (Ljava/lang/Object;JLjava/lang/String;J[Ljava/lang/String;[ILjava/lang/Throwable;)V\n" +
+                        "DUP2\n" +
+                        "LSTORE 12\n" +
+                        "ALOAD 0\n" +
+                        "LLOAD 12\n" +
+                        "LLOAD 6\n" +
+                        "ALOAD 1\n" +
+                        "LLOAD 2\n" +
+                        "ALOAD 4\n" +
+                        "ALOAD 5\n" +
+                        "INVOKESTATIC resources/OnMethodTest.$btrace$traces$onmethod$ArgsDurationErrAAA$args (Ljava/lang/Object;JLjava/lang/String;J[Ljava/lang/String;[ILjava/lang/Throwable;)V\n" +
+                        "MAXSTACK = 12\n" +
+                        "MAXLOCALS = 14"
+        );
+    
+        resetClassLoader();
+    
+        transform("onmethod/leveled/ArgsDurationErrAAA");
+        checkTransformation(
+                "LCONST_0\n" +
+                        "LSTORE 6\n" +
+                        "LCONST_0\n" +
+                        "LSTORE 8\n" +
+                        "GETSTATIC resources/OnMethodTest.$btrace$$level : I\n" +
+                        "DUP\n" +
+                        "ISTORE 10\n" +
+                        "IFLE L0\n" +
+                        "INVOKESTATIC java/lang/System.nanoTime ()J\n" +
+                        "LSTORE 8\n" +
+                        "FRAME APPEND [J J I]\n" +
+                        "ILOAD 10\n" +
+                        "IFLE L1\n" +
+                        "INVOKESTATIC java/lang/System.nanoTime ()J\n" +
+                        "LLOAD 8\n" +
+                        "LSUB\n" +
+                        "LSTORE 6\n" +
+                        "L1\n" +
+                        "FRAME SAME1 J\n" +
+                        "GETSTATIC traces/onmethod/leveled/ArgsDurationErrAAA.$btrace$$level : I\n" +
+                        "ICONST_1\n" +
+                        "IF_ICMPLT L2\n" +
+                        "DUP2\n" +
+                        "LSTORE 11\n" +
+                        "ALOAD 0\n" +
+                        "LLOAD 11\n" +
+                        "LLOAD 6\n" +
+                        "ALOAD 1\n" +
+                        "LLOAD 2\n" +
+                        "ALOAD 4\n" +
+                        "ALOAD 5\n" +
+                        "INVOKESTATIC resources/OnMethodTest.$btrace$traces$onmethod$leveled$ArgsDurationErrAAA$args2 (Ljava/lang/Object;JLjava/lang/String;J[Ljava/lang/String;[ILjava/lang/Throwable;)V\n" +
+                        "L2\n" +
+                        "FRAME FULL [resources/OnMethodTest java/lang/String J [Ljava/lang/String; [I J J I T] [java/lang/Throwable]\n" +
+                        "GETSTATIC traces/onmethod/leveled/ArgsDurationErrAAA.$btrace$$level : I\n" +
+                        "ICONST_1\n" +
+                        "IF_ICMPLT L3\n" +
+                        "DUP2\n" +
+                        "LSTORE 13\n" +
+                        "ALOAD 0\n" +
+                        "LLOAD 13\n" +
+                        "LLOAD 6\n" +
+                        "ALOAD 1\n" +
+                        "LLOAD 2\n" +
+                        "ALOAD 4\n" +
+                        "ALOAD 5\n" +
+                        "INVOKESTATIC resources/OnMethodTest.$btrace$traces$onmethod$leveled$ArgsDurationErrAAA$args (Ljava/lang/Object;JLjava/lang/String;J[Ljava/lang/String;[ILjava/lang/Throwable;)V\n" +
+                        "L3\n" +
+                        "FRAME FULL [resources/OnMethodTest java/lang/String J [Ljava/lang/String; [I J J I T T] [java/lang/Throwable]\n" +
+                        "L4\n" +
+                        "LOCALVARIABLE this Lresources/OnMethodTest; L0 L4 0\n" +
+                        "LOCALVARIABLE a Ljava/lang/String; L0 L4 1\n" +
+                        "LOCALVARIABLE b J L0 L4 2\n" +
+                        "LOCALVARIABLE c [Ljava/lang/String; L0 L4 4\n" +
+                        "LOCALVARIABLE d [I L0 L4 5\n" +
+                        "MAXSTACK = 12\n" +
+                        "MAXLOCALS = 15"
+        );
+    }*/
 }
