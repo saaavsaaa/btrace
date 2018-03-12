@@ -819,6 +819,8 @@ public class Instrumentor extends ClassVisitor {
                             String argStr = sourceArgs.substring(1, rightSide);
                             System.out.println("argStr : " + argStr);
                             System.out.println("om.getTargetDescriptor() : " + om.getTargetDescriptor());
+                            
+                            //只有参数类型的匹配不严谨
                             useArgs = numActionArgs == 0 || !om.getTargetDescriptor().contains(argStr);
                         }
                         

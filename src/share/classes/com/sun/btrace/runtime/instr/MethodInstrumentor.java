@@ -583,6 +583,7 @@ public class MethodInstrumentor extends BTraceMethodVisitor {
                     argIndex != om.getTargetMethodOrFieldParameter() &&
                     argIndex != om.getDurationParameter()) {
                 cleansedArgArray[counter] = actionArgTypes[argIndex];
+                System.out.println("actionArgTypes[argIndex] : " + actionArgTypes[argIndex]);
                 cleansedArgIndex[counter] = argIndex;
                 counter++;
             }
