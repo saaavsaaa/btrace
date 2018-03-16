@@ -812,23 +812,14 @@ public class Instrumentor extends ClassVisitor {
                     {
                         addExtraTypeInfo(om.getSelfParameter(), Type.getObjectType(className));
 //                        vr = validateArguments(om, actionArgTypes, Type.getArgumentTypes(getDescriptor()));
-                        
-                        if (getDescriptor().indexOf("()") == -1) {
-                            String sourceArgs = getDescriptor();
-                            int rightSide = sourceArgs.indexOf(")");
-                            String argStr = sourceArgs.substring(1, rightSide);
-                            System.out.println("argStr : " + argStr);
-                            System.out.println("om.getTargetDescriptor() : " + om.getTargetDescriptor());
-                            
-                            //只有参数类型的匹配不严谨
-                            useArgs = numActionArgs == 0 || !om.getTargetDescriptor().contains(argStr);
-                        }
+    
+                        //先解析字节码，做好单元测试
+                        Type[] sources = Type.getArgumentTypes(getDescriptor());
+                        useArgs = sources.length == 0 || om.getMethodParameter() == -1;
                         
                         if (useArgs){
-                            System.out.println("ssssssssssssssssssssss");
                             vr = validateArguments(om, actionArgTypes, new Type[]{THROWABLE_TYPE});
                         } else {
-                            System.out.println("rrrrrrrrrrrrrrrrrrrrrr");
                             vr = validateArguments(om, actionArgTypes, Type.getArgumentTypes(getDescriptor()));
                         }
                     }
@@ -900,9 +891,9 @@ public class Instrumentor extends ClassVisitor {
     
                         ArgumentProvider[] actionArgs = new ArgumentProvider[5];
     
-//                        actionArgs[0] = localVarArg(om.getReturnParameter(), probeRetType, retValIndex, boxReturnValue);
+                        actionArgs[0] = localVarArg(om.getReturnParameter(), probeRetType, retValIndex, boxReturnValue);
 //                        actionArgs[0] = localVarArg(vr.getArgIdx(0), THROWABLE_TYPE, throwableIndex);
-                        actionArgs[0] = constArg(throwableIndex, THROWABLE_TYPE);
+//                        actionArgs[0] = constArg(throwableIndex, THROWABLE_TYPE);
                         actionArgs[1] = constArg(om.getClassNameParameter(), className.replace('/', '.'));
                         actionArgs[2] = constArg(om.getMethodParameter(), getName(om.isMethodFqn()));
                         actionArgs[3] = selfArg(om.getSelfParameter(), Type.getObjectType(className));
