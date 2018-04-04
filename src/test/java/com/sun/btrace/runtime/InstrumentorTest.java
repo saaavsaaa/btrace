@@ -5734,7 +5734,7 @@ public class InstrumentorTest extends InstrumentorTestBase {
     
     
     
-    /*@Test
+    @Test
     public void methodEntryArgsDurationErrAAA() throws Exception {
         loadTargetClass("OnMethodTest");
         transform("onmethod/ArgsDurationErrAAA");
@@ -5773,7 +5773,7 @@ public class InstrumentorTest extends InstrumentorTestBase {
     
         resetClassLoader();
     
-        transform("onmethod/leveled/ArgsDurationErrAAA");
+        /*transform("onmethod/leveled/ArgsDurationErrAAA");
         checkTransformation(
                 "LCONST_0\n" +
                         "LSTORE 6\n" +
@@ -5832,6 +5832,6 @@ public class InstrumentorTest extends InstrumentorTestBase {
                         "LOCALVARIABLE d [I L0 L4 5\n" +
                         "MAXSTACK = 12\n" +
                         "MAXLOCALS = 15"
-        );
-    }*/
+        );*/
+    }
 }

@@ -812,8 +812,6 @@ public class Instrumentor extends ClassVisitor {
                     {
                         addExtraTypeInfo(om.getSelfParameter(), Type.getObjectType(className));
 //                        vr = validateArguments(om, actionArgTypes, Type.getArgumentTypes(getDescriptor()));
-    
-                        //列出经过栈的所有方法
                         
                         //先对比return解析字节码，做好单元测试
                         Type[] sources = Type.getArgumentTypes(getDescriptor());
