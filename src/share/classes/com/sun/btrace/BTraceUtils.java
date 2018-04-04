@@ -960,6 +960,78 @@ public class BTraceUtils {
     }
 
     /**
+     * Prints the elements of the given array as comma
+     * separated line bounded by '[' and ']'.
+     * @since 1.3.11
+     */
+    public static void printArray(int[] array) {
+        Arrays.toString(array);
+    }
+
+    /**
+     * Prints the elements of the given array as comma
+     * separated line bounded by '[' and ']'.
+     * @since 1.3.11
+     */
+    public static void printArray(long[] array) {
+        Arrays.toString(array);
+    }
+
+    /**
+     * Prints the elements of the given array as comma
+     * separated line bounded by '[' and ']'.
+     * @since 1.3.11
+     */
+    public static void printArray(float[] array) {
+        Arrays.toString(array);
+    }
+
+    /**
+     * Prints the elements of the given array as comma
+     * separated line bounded by '[' and ']'.
+     * @since 1.3.11
+     */
+    public static void printArray(double[] array) {
+        Arrays.toString(array);
+    }
+
+    /**
+     * Prints the elements of the given array as comma
+     * separated line bounded by '[' and ']'.
+     * @since 1.3.11
+     */
+    public static void printArray(boolean[] array) {
+        Arrays.toString(array);
+    }
+
+    /**
+     * Prints the elements of the given array as comma
+     * separated line bounded by '[' and ']'.
+     * @since 1.3.11
+     */
+    public static void printArray(char[] array) {
+        Arrays.toString(array);
+    }
+
+    /**
+     * Prints the elements of the given array as comma
+     * separated line bounded by '[' and ']'.
+     * @since 1.3.11
+     */
+    public static void printArray(byte[] array) {
+        Arrays.toString(array);
+    }
+
+    /**
+     * Prints the elements of the given array as comma
+     * separated line bounded by '[' and ']'.
+     * @since 1.3.11
+     */
+    public static void printArray(short[] array) {
+        Arrays.toString(array);
+    }
+
+    /**
      * Print all instance fields of an object as name-value
      * pairs. Includes the inherited fields as well.
      *
@@ -1335,8 +1407,8 @@ public class BTraceUtils {
     /**
      * Substring
      */
-    public static String substr(String str,  int start, int length) {
-        return Strings.substr(str, start, length);
+    public static String substr(String str,  int start, int end) {
+        return Strings.substr(str, start, end);
     }
     public static String substr(String str, int start) {
         return Strings.substr(str, start);
@@ -2304,6 +2376,17 @@ public class BTraceUtils {
      */
     public static String $(int n) {
         return Sys.$(n);
+    }
+
+    /**
+     * Returns a command line argument value for the given key. {@code null} if not available.<br>
+     * In order to provide a key-value pair on the command line it must have the following syntax -
+     *  &lt;key&gt;=&lt;value&gt;
+     * @param key the argument key
+     * @return the corresponding value or {@code null}
+     */
+    public static String $(String key) {
+        return Sys.$(key);
     }
 
     /**
@@ -3632,9 +3715,10 @@ public class BTraceUtils {
         /**
          * Substring
          */
-        public static String substr(String str,  int start, int length) {
-            return str.substring(start, length);
+        public static String substr(String str,  int start, int end) {
+            return str.substring(start, end);
         }
+        
         public static String substr(String str, int start) {
             return str.substring(start);
         }
@@ -6656,10 +6740,21 @@ public class BTraceUtils {
          * Returns n'th command line argument. <code>null</code> if not available.
          *
          * @param n command line argument index
-         * @return n'th command line argument
+         * @return n'th command line argument or {@code null} if out-of-range
          */
         public static String $(int n) {
             return BTraceRuntime.$(n);
+        }
+
+        /**
+         * Returns a command line argument value for the given key. {@code null} if not available.<br>
+         * In order to provide a key-value pair on the command line it must have the following syntax -
+         *  &lt;key&gt;=&lt;value&gt;
+         * @param key the argument key
+         * @return the corresponding value or {@code null}
+         */
+        public static String $(String key) {
+            return BTraceRuntime.$(key);
         }
 
         /**

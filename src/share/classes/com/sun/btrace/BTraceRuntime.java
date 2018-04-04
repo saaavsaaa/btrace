@@ -55,6 +55,7 @@ import com.sun.btrace.org.jctools.queues.MessagePassingQueue;
 import com.sun.btrace.org.jctools.queues.MpmcArrayQueue;
 import com.sun.btrace.org.jctools.queues.MpscChunkedArrayQueue;
 import com.sun.btrace.profiling.MethodInvocationProfiler;
+import com.sun.btrace.runtime.Constants;
 import com.sun.btrace.shared.ErrorHandler;
 import com.sun.btrace.shared.EventHandler;
 import com.sun.btrace.shared.ExitHandler;
@@ -106,11 +107,12 @@ import javax.management.openmbean.CompositeData;
 
 import java.lang.management.OperatingSystemMXBean;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashSet;
+import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -259,7 +261,7 @@ public final class BTraceRuntime  {
     private ThreadLocal<Throwable> currentException = new ThreadLocal<>();
 
     // "command line" args supplied by client
-    private final String[] args;
+    private final ArgsMap args;
 
     // whether current runtime has been disabled?
     private volatile boolean disabled;
@@ -421,7 +423,7 @@ public final class BTraceRuntime  {
         instrumentation = null;
     }
 
-    public BTraceRuntime(final String className, String[] args,
+    public BTraceRuntime(final String className, ArgsMap args,
                          final CommandListener cmdListener,
                          DebugSupport ds, Instrumentation inst) {
         this.args = args;
@@ -452,6 +454,28 @@ public final class BTraceRuntime  {
         });
         cmdThread.setDaemon(true);
         cmdThread.start();
+    }
+
+    public static long parseLong(String value, long deflt) {
+        if (value == null) {
+            return deflt;
+        }
+        try {
+            return Long.parseLong(value);
+        } catch (NumberFormatException e) {
+            return deflt;
+        }
+    }
+
+    public static int parseInt(String value, int deflt) {
+        if (value == null) {
+            return deflt;
+        }
+        try {
+            return Integer.parseInt(value);
+        } catch (NumberFormatException e) {
+            return deflt;
+        }
     }
 
     public static void initUnsafe() {
@@ -575,7 +599,8 @@ public final class BTraceRuntime  {
                 eventHandlerMap = new HashMap<>();
                 for (EventHandler eh : eventHandlers) {
                     try {
-                       eventHandlerMap.put(eh.getEvent(), eh.getMethod(clazz));
+                        String eventName = args.template(eh.getEvent());
+                        eventHandlerMap.put(eventName, eh.getMethod(clazz));
                     } catch (NoSuchMethodException e) {}
                 }
             }
@@ -1171,7 +1196,7 @@ public final class BTraceRuntime  {
     // BTrace command line argument functions
     static int $length() {
         BTraceRuntime runtime = getCurrent();
-        return runtime.args == null? 0 : runtime.args.length;
+        return runtime.args == null? 0 : runtime.args.size();
     }
 
     static String $(int n) {
@@ -1179,11 +1204,16 @@ public final class BTraceRuntime  {
         if (runtime.args == null) {
             return null;
         } else {
-            if (n >= 0 && n < runtime.args.length) {
-                return runtime.args[n];
-            } else {
-                return null;
-            }
+            return runtime.args.get(n);
+        }
+    }
+
+    static String $(String key) {
+        BTraceRuntime runtime = getCurrent();
+        if (runtime.args == null) {
+            return null;
+        } else {
+            return runtime.args.get(key);
         }
     }
 
@@ -2303,7 +2333,12 @@ public final class BTraceRuntime  {
             wrapToTimerTasks(timerTasks);
             for (int index = 0; index < timerHandlers.length; index++) {
                 final TimerHandler th = timerHandlers[index];
-                timer.schedule(timerTasks[index], th.period, th.period);
+                long period = th.period;
+                String periodArg = th.periodArg;
+                if (periodArg != null) {
+                    period = parseLong(args.template(periodArg), period);
+                }
+                timer.schedule(timerTasks[index], period, period);
             }
         }
 
@@ -2313,7 +2348,8 @@ public final class BTraceRuntime  {
             initMemoryPoolList();
             lowMemoryHandlerMap = new HashMap<>();
             for (LowMemoryHandler lmh : lowMemoryHandlers) {
-                lowMemoryHandlerMap.put(lmh.pool, lmh);
+                String poolName = args.template(lmh.pool);
+                lowMemoryHandlerMap.put(poolName, lmh);
             }
             for (MemoryPoolMXBean mpoolBean : memPoolList) {
                 String name = mpoolBean.getName();
@@ -2501,6 +2537,10 @@ public final class BTraceRuntime  {
         try {
             level = cl.getDeclaredField("$btrace$$level");
             level.setAccessible(true);
+            int levelVal = parseInt(args.get("level"), Integer.MIN_VALUE);
+            if (levelVal > Integer.MIN_VALUE) {
+                level.set(null, levelVal);
+            }
         } catch (Throwable e) {
             debugPrint("Instrumentation level setting not available");
         }
@@ -2517,8 +2557,8 @@ public final class BTraceRuntime  {
         buf.append(File.separatorChar);
         BTraceRuntime runtime = getCurrent();
         buf.append("btrace");
-        if (runtime.args != null && runtime.args.length > 0) {
-            buf.append(runtime.args[0]);
+        if (runtime.args != null && runtime.args.size() > 0) {
+            buf.append(runtime.args.get(0));
         }
         buf.append(File.separatorChar);
         buf.append(runtime.className);

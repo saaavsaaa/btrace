@@ -25,6 +25,7 @@
 
 package com.sun.btrace.agent;
 
+import com.sun.btrace.ArgsMap;
 import com.sun.btrace.runtime.BTraceProbeFactory;
 import com.sun.btrace.runtime.ClassCache;
 import com.sun.btrace.runtime.ClassInfo;
@@ -35,6 +36,7 @@ import java.io.IOException;
 import com.sun.btrace.org.objectweb.asm.ClassReader;
 import com.sun.btrace.org.objectweb.asm.ClassWriter;
 import com.sun.btrace.BTraceRuntime;
+import com.sun.btrace.BTraceUtils;
 import com.sun.btrace.CommandListener;
 import com.sun.btrace.comm.ErrorCommand;
 import com.sun.btrace.comm.ExitCommand;
@@ -86,6 +88,7 @@ abstract class Client implements CommandListener {
 
     protected final SharedSettings settings;
     protected final DebugSupport debug;
+    protected final ArgsMap argsMap;
     private final BTraceTransformer transformer;
 
     private volatile boolean initialized = false;
@@ -108,11 +111,12 @@ abstract class Client implements CommandListener {
     }
 
     Client(ClientContext ctx) {
-        this(ctx.getInstr(), ctx.getSettings(), ctx.getTransformer());
+        this(ctx.getInstr(), ctx.getArguments(), ctx.getSettings(), ctx.getTransformer());
     }
 
-    private Client(Instrumentation inst, SharedSettings s, BTraceTransformer t) {
+    private Client(Instrumentation inst, ArgsMap argsMap, SharedSettings s, BTraceTransformer t) {
         this.inst  = inst;
+        this.argsMap = argsMap;
         this.settings = s != null ? s : SharedSettings.GLOBAL;
         this.transformer = t;
         this.debug = new DebugSupport(settings);
@@ -270,7 +274,7 @@ abstract class Client implements CommandListener {
     }
 
     protected final Class loadClass(InstrumentCommand instr, boolean canLoadPack) throws IOException {
-        String[] args = instr.getArguments();
+        ArgsMap args = instr.getArguments();
         this.btraceCode = instr.getCode();
         try {
             probe = load(btraceCode, canLoadPack);
@@ -312,12 +316,20 @@ abstract class Client implements CommandListener {
 
         onCommand(new OkayCommand());
 
+        boolean entered = false;
         try {
+            entered = BTraceRuntime.enter(runtime);
+            System.err.println("*** " + entered);
+            System.err.println("*** " + BTraceUtils.$("timer"));
             return probe.register(runtime, transformer);
         } catch (Throwable th) {
             debugPrint(th);
             errorExit(th);
             return null;
+        } finally {
+            if (entered) {
+                BTraceRuntime.leave();
+            }
         }
     }
 
@@ -410,7 +422,7 @@ abstract class Client implements CommandListener {
     private BTraceProbe load(byte[] buf, boolean canLoadPack) {
         BTraceProbeFactory f = new BTraceProbeFactory(settings, canLoadPack);
         debugPrint("loading BTrace class");
-        BTraceProbe cn = f.createProbe(buf);
+        BTraceProbe cn = f.createProbe(buf, argsMap);
 
         if (cn != null) {
             if (isDebug()) {

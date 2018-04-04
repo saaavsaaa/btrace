@@ -25,30 +25,47 @@
 
 package com.sun.btrace.comm;
 
+import com.sun.btrace.ArgsMap;
+import com.sun.btrace.DebugSupport;
+import com.sun.btrace.SharedSettings;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.IOException;
+import java.util.Map;
 
 public class InstrumentCommand extends Command {
     private byte[] code;
-    private String[] args;
-    public InstrumentCommand(byte[] code, String[] args) {
+    private ArgsMap args;
+    private final DebugSupport debug;
+
+    public InstrumentCommand(byte[] code, ArgsMap args, DebugSupport debug) {
         super(INSTRUMENT);
         this.code = code;
         this.args = args;
+        this.debug = debug;
+    }
+
+    public InstrumentCommand(byte[] code, String[] args, DebugSupport debug) {
+        this(code, new ArgsMap(args, debug), debug);
+    }
+
+    public InstrumentCommand(byte[] code, Map<String, String> args, DebugSupport debug) {
+        this(code, new ArgsMap(args, debug), debug);
     }
 
     protected InstrumentCommand() {
-        this(null, null);
+        this(null, (Map<String, String>)null, new DebugSupport(SharedSettings.GLOBAL));
     }
 
     @Override
     protected void write(ObjectOutput out) throws IOException {       
         out.writeInt(code.length);
         out.write(code);
-        out.writeInt(args.length);
-        for (String a : args) {
-            out.writeUTF(a);
+        out.writeInt(args.size());
+        for (Map.Entry<String, String> e : args) {
+            out.writeUTF(e.getKey());
+            String val = e.getValue();
+            out.writeUTF(val != null ? val : "");
         }
     }
 
@@ -58,9 +75,11 @@ public class InstrumentCommand extends Command {
         code = new byte[len];
         in.readFully(code);
         len = in.readInt();
-        args = new String[len];
+        args = new ArgsMap(len, debug);
         for (int i = 0; i < len; i++) {
-            args[i] = in.readUTF();
+            String key = in.readUTF();
+            String val = in.readUTF();
+            args.put(key, val);
         }
     }
 
@@ -68,7 +87,7 @@ public class InstrumentCommand extends Command {
         return code;
     }
 
-    public String[] getArguments() {
+    public ArgsMap getArguments() {
         return args;
     }
 }

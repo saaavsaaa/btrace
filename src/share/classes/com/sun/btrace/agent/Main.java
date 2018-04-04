@@ -24,6 +24,7 @@
  */
 package com.sun.btrace.agent;
 
+import com.sun.btrace.ArgsMap;
 import com.sun.btrace.runtime.BTraceTransformer;
 import com.sun.btrace.DebugSupport;
 import com.sun.btrace.SharedSettings;
@@ -43,6 +44,8 @@ import com.sun.btrace.comm.ErrorCommand;
 import com.sun.btrace.util.Messages;
 import java.io.InputStream;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -60,7 +63,7 @@ import java.util.regex.Pattern;
 public final class Main {
     private static long ts = System.nanoTime();
 
-    private static volatile Map<String, String> argMap;
+    private static volatile ArgsMap argMap;
     private static volatile Instrumentation inst;
     private static volatile Long fileRollMilliseconds;
 
@@ -272,7 +275,7 @@ public final class Main {
             args = "";
         }
         String[] pairs = KV_PATTERN.split(args);
-        argMap = new HashMap<>();
+        argMap = new ArgsMap();
         for (String s : pairs) {
             int i = s.indexOf('=');
             String key, value = "";
@@ -306,7 +309,7 @@ public final class Main {
             debugPrint("debugMode is " + settings.isDebug());
         }
 
-        for (Map.Entry<String, String> e : argMap.entrySet()) {
+        for (Map.Entry<String, String> e : argMap) {
             String key = e.getKey();
             p = e.getValue();
             switch (key) {
@@ -526,23 +529,23 @@ public final class Main {
             if (delimiterPos > -1) {
                 String jar = path.substring(9, delimiterPos);
                 File jarFile = new File(jar);
-                String libPath = new File(jarFile.getParent() + File.separator + "btrace-libs").getAbsolutePath();
-                appendToBootClassPath(libPath);
-                appendToSysClassPath(libPath);
-                appendToBootClassPath(libPath, libs);
-                appendToSysClassPath(libPath, libs);
+                Path libRoot = new File(jarFile.getParent() + File.separator + "btrace-libs").toPath();
+                Path libFolder = libs != null ? libRoot.resolve(libs) : libRoot;
+                if (Files.exists(libFolder)) {
+                    appendToBootClassPath(libFolder);
+                    appendToSysClassPath(libFolder);
+                } else {
+                    DebugSupport.warning("Invalid 'libs' configuration [" + libs + "]. " +
+                                 "Path '" + libFolder.toAbsolutePath().toString() + "' does not exist.");
+                }
             }
         }
     }
 
-    private static void appendToBootClassPath(String libPath) {
-        appendToBootClassPath(libPath, null);
-    }
-
-    private static void appendToBootClassPath(String libPath, String libs) {
-        File libFolder = new File(libPath + (libs != null ? File.separator + libs : "") + File.separator + "boot");
-        if (libFolder.exists()) {
-            for (File f : libFolder.listFiles()) {
+    private static void appendToBootClassPath(Path libFolder) {
+        Path bootLibs = libFolder.resolve("boot");
+        if (Files.exists(bootLibs)) {
+            for (File f : bootLibs.toFile().listFiles()) {
                 if (f.getName().toLowerCase().endsWith(".jar")) {
                     try {
                         if (isDebug()) {
@@ -556,14 +559,10 @@ public final class Main {
         }
     }
 
-    private static void appendToSysClassPath(String libPath) {
-        appendToSysClassPath(libPath, null);
-    }
-
-    private static void appendToSysClassPath(String libPath, String libs) {
-        File libFolder = new File(libPath + (libs != null ? File.separator + libs : "") + File.separator + "system");
-        if (libFolder.exists()) {
-            for (File f : libFolder.listFiles()) {
+    private static void appendToSysClassPath(Path libFolder) {
+        Path sysLibs = libFolder.resolve("system");
+        if (Files.exists(sysLibs)) {
+            for (File f : sysLibs.toFile().listFiles()) {
                 if (f.getName().toLowerCase().endsWith(".jar")) {
                     try {
                         if (isDebug()) {
@@ -611,7 +610,7 @@ public final class Main {
                     }
                 }
             }
-            ClientContext ctx = new ClientContext(inst, transformer, clientSettings);
+            ClientContext ctx = new ClientContext(inst, transformer, argMap, clientSettings);
             Client client = new FileClient(ctx, traceScript);
             if (client.isInitialized()) {
                 handleNewClient(client).get();
@@ -669,7 +668,7 @@ public final class Main {
                 if (isDebug()) {
                     debugPrint("client accepted " + sock);
                 }
-                ClientContext ctx = new ClientContext(inst, transformer, settings);
+                ClientContext ctx = new ClientContext(inst, transformer, argMap, settings);
                 Client client = new RemoteClient(ctx, sock);
                 handleNewClient(client).get();
             } catch (RuntimeException | IOException | ExecutionException re) {
