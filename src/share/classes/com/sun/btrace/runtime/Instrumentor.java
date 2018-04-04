@@ -811,13 +811,9 @@ public class Instrumentor extends ClassVisitor {
                     {
                         addExtraTypeInfo(om.getSelfParameter(), Type.getObjectType(className));
     
-                        if (getDescriptor().indexOf("()") > 0) {
-                            String sourceArgs = getDescriptor();
-                            int rightSide = sourceArgs.indexOf(")");
-                            String argStr = sourceArgs.substring(1, rightSide);
-                            useArgs = numActionArgs == 0 || !om.getTargetDescriptor().contains(argStr);
-                        }
-                        
+                        Type[] sources = Type.getArgumentTypes(getDescriptor());
+                        useArgs = sources.length == 0 || om.getMethodParameter() == -1;
+    
                         if (useArgs){
                             vr = validateArguments(om, actionArgTypes, new Type[]{THROWABLE_TYPE});
                         } else {
@@ -872,7 +868,6 @@ public class Instrumentor extends ClassVisitor {
     
                             ArgumentProvider[] actionArgs;
                             Label l;
-                            
                             if (useArgs){
                                 actionArgs = buildArgsWithoutParas(throwableIndex);
                                 l = levelCheck(om, bcn.getClassName(true));
