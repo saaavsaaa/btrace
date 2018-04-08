@@ -245,7 +245,6 @@ public class Instrumentor extends ClassVisitor {
         final OnMethod om, MethodVisitor mv,
         final MethodInstrumentorHelper mHelper,
         final int access, final String name, final String desc) {
-        
         final Location loc = om.getLocation();
         final Where where = loc.getWhere();
         final Type[] actionArgTypes = Type.getArgumentTypes(om.getTargetDescriptor());
@@ -659,17 +658,18 @@ public class Instrumentor extends ClassVisitor {
                     protected void onCatch(String type) {
                         Type exctype = Type.getObjectType(type);
                         addExtraTypeInfo(om.getSelfParameter(), Type.getObjectType(className));
-                        ValidationResult vr = validateArguments(om, actionArgTypes, new Type[]{exctype});
+                        addExtraTypeInfo(om.getTargetInstanceParameter(), exctype);
+                        ValidationResult vr = validateArguments(om, actionArgTypes, Type.getArgumentTypes(getDescriptor()));
                         if (vr.isValid()) {
                             int index = -1;
                             Label l = levelCheck(om, bcn.getClassName(true));
 
-                            if (!vr.isAny()) {
+                            if (om.getTargetInstanceParameter() != -1) {
                                 asm.dup();
                                 index = storeAsNew();
                             }
                             loadArguments(
-                                localVarArg(vr.getArgIdx(0), exctype, index),
+                                localVarArg(om.getTargetInstanceParameter(), exctype, index),
                                 constArg(om.getClassNameParameter(), className.replace('/', '.')),
                                 constArg(om.getMethodParameter(), getName(om.isMethodFqn())),
                                 selfArg(om.getSelfParameter(), Type.getObjectType(className)));
@@ -807,49 +807,42 @@ public class Instrumentor extends ClassVisitor {
             case ERROR:
                 // <editor-fold defaultstate="collapsed" desc="Error Instrumentor">
                 ErrorReturnInstrumentor eri = new ErrorReturnInstrumentor(cl, mv, mHelper, className, superName, access, name, desc) {
-                    boolean useArgs = true;
                     ValidationResult vr;
                     {
                         addExtraTypeInfo(om.getSelfParameter(), Type.getObjectType(className));
-//                        vr = validateArguments(om, actionArgTypes, Type.getArgumentTypes(getDescriptor()));
-                        
-                        //先对比return解析字节码，做好单元测试
-                        Type[] sources = Type.getArgumentTypes(getDescriptor());
-                        useArgs = sources.length == 0 || om.getMethodParameter() == -1;
-                        
-                        if (useArgs){
-                            vr = validateArguments(om, actionArgTypes, new Type[]{THROWABLE_TYPE});
-                        } else {
-                            vr = validateArguments(om, actionArgTypes, Type.getArgumentTypes(getDescriptor()));
-                        }
+                        addExtraTypeInfo(om.getTargetInstanceParameter(), THROWABLE_TYPE);
+                        vr = validateArguments(om, actionArgTypes, Type.getArgumentTypes(getDescriptor()));
                     }
-    
+
                     @Override
                     protected void onErrorReturn() {
                         if (vr.isValid()) {
                             int throwableIndex = -1;
-            
+
                             MethodTrackingExpander.TEST_SAMPLE.insert(mv, MethodTrackingExpander.$TIMED);
-            
-                            if (!vr.isAny()) {
+
+                            if (om.getTargetInstanceParameter() != -1) {
                                 asm.dup();
                                 throwableIndex = storeAsNew();
                             }
-            
-                            ArgumentProvider[] actionArgs;
-                            Label l;
-//                            Type[] sources = Type.getArgumentTypes(getDescriptor());
-                            if (useArgs /*sources.length == 0*/){
-                                actionArgs = buildArgsWithoutParas(throwableIndex);
-                                l = levelCheck(om, bcn.getClassName(true));
-                                loadArguments(actionArgs);
-                            } else {
-                                actionArgs = loadArgsWithParas(throwableIndex);
-                                l = levelCheck(om, bcn.getClassName(true));
-                                
-                                //原参数+异常参数
-                                loadArguments(vr, actionArgTypes, isStatic(), actionArgs);
-                            }
+
+                            ArgumentProvider[] actionArgs = new ArgumentProvider[5];
+
+                            actionArgs[0] = localVarArg(om.getTargetInstanceParameter(), THROWABLE_TYPE, throwableIndex);
+                            actionArgs[1] = constArg(om.getClassNameParameter(), className.replace('/', '.'));
+                            actionArgs[2] = constArg(om.getMethodParameter(), getName(om.isMethodFqn()));
+                            actionArgs[3] = selfArg(om.getSelfParameter(), Type.getObjectType(className));
+                            actionArgs[4] = new ArgumentProvider(asm, om.getDurationParameter()) {
+                                @Override
+                                public void doProvide() {
+                                    MethodTrackingExpander.DURATION.insert(mv);
+                                }
+                            };
+
+                            Label l = levelCheck(om, bcn.getClassName(true));
+
+                            loadArguments(vr, actionArgTypes, isStatic(), actionArgs);
+
                             invokeBTraceAction(asm, om);
                             if (l != null) {
                                 mv.visitLabel(l);
@@ -857,70 +850,6 @@ public class Instrumentor extends ClassVisitor {
                             }
                             MethodTrackingExpander.ELSE_SAMPLE.insert(mv);
                         }
-                    }
-    
-                    private ArgumentProvider[] loadArgsWithParas(int throwableIndex){
-                        // <editor-fold defaultstate="collapsed" desc="原返回值">
-                        Type probeRetType = getReturnType();
-                        boolean boxReturnValue = true;
-                        int retValIndex = -1;
-                        
-                        if (om.getReturnParameter() != -1) {
-                            Type retType = Type.getArgumentTypes(om.getTargetDescriptor())[om.getReturnParameter()];
-                            if (probeRetType.equals(Type.VOID_TYPE)) {
-                                if (TypeUtils.isAnyType(retType)) {
-                                    // no return value but still tracking
-                                    // let's push a synthetic AnyType value on stack
-                                    asm.getStatic(Type.getInternalName(AnyType.class), "VOID", ANYTYPE_DESC);
-                                    probeRetType = OBJECT_TYPE;
-                                } else if (VOIDREF_TYPE.equals(retType)) {
-                                    // intercepting return from method not returning value (void)
-                                    // the receiver accepts java.lang.Void only so let's push NULL on stack
-                                    asm.loadNull();
-                                    probeRetType = VOIDREF_TYPE;
-                                }
-                            } else {
-                                if (Type.getReturnType(om.getTargetDescriptor()).getSort() == Type.VOID) {
-                                    asm.dupReturnValue(-1);
-                                }
-                                boxReturnValue = TypeUtils.isAnyType(retType);
-                            }
-                            retValIndex = storeAsNew();
-                        }
-                        // </editor-fold>
-    
-                        ArgumentProvider[] actionArgs = new ArgumentProvider[5];
-    
-                        actionArgs[0] = localVarArg(om.getReturnParameter(), probeRetType, retValIndex, boxReturnValue);
-//                        actionArgs[0] = localVarArg(vr.getArgIdx(0), THROWABLE_TYPE, throwableIndex);
-//                        actionArgs[0] = constArg(throwableIndex, THROWABLE_TYPE);
-                        actionArgs[1] = constArg(om.getClassNameParameter(), className.replace('/', '.'));
-                        actionArgs[2] = constArg(om.getMethodParameter(), getName(om.isMethodFqn()));
-                        actionArgs[3] = selfArg(om.getSelfParameter(), Type.getObjectType(className));
-                        actionArgs[4] = new ArgumentProvider(asm, om.getDurationParameter()) {
-                            @Override
-                            public void doProvide() {
-                                MethodTrackingExpander.DURATION.insert(mv);
-                            }
-                        };
-    
-                        return actionArgs;
-                    }
-    
-                    private ArgumentProvider[] buildArgsWithoutParas(int throwableIndex){
-                        ArgumentProvider[] actionArgs = new ArgumentProvider[5];
-    
-                        actionArgs[0] = localVarArg(vr.getArgIdx(0), THROWABLE_TYPE, throwableIndex);
-                        actionArgs[1] = constArg(om.getClassNameParameter(), className.replace('/', '.'));
-                        actionArgs[2] = constArg(om.getMethodParameter(), getName(om.isMethodFqn()));
-                        actionArgs[3] = selfArg(om.getSelfParameter(), Type.getObjectType(className));
-                        actionArgs[4] = new ArgumentProvider(asm, om.getDurationParameter()) {
-                            @Override
-                            public void doProvide() {
-                                MethodTrackingExpander.DURATION.insert(mv);
-                            }
-                        };
-                        return actionArgs;
                     }
 
                     private boolean generatingCode = false;
@@ -1707,16 +1636,17 @@ public class Instrumentor extends ClassVisitor {
                     @Override
                     protected void onThrow() {
                         addExtraTypeInfo(om.getSelfParameter(), Type.getObjectType(className));
-                        ValidationResult vr = validateArguments(om, actionArgTypes, new Type[]{THROWABLE_TYPE});
+                        addExtraTypeInfo(om.getTargetInstanceParameter(), THROWABLE_TYPE);
+                        ValidationResult vr = validateArguments(om, actionArgTypes, Type.getArgumentTypes(getDescriptor()));
                         if (vr.isValid()) {
                             int throwableIndex = -1;
                             Label l = levelCheck(om, bcn.getClassName(true));
-                            if (!vr.isAny()) {
+                            if (om.getTargetInstanceParameter() != -1) {
                                 asm.dup();
                                 throwableIndex = storeAsNew();
                             }
                             loadArguments(
-                                localVarArg(vr.getArgIdx(0), THROWABLE_TYPE, throwableIndex),
+                                localVarArg(om.getTargetInstanceParameter(), THROWABLE_TYPE, throwableIndex),
                                 constArg(om.getClassNameParameter(), className.replace('/', '.')),
                                 constArg(om.getMethodParameter(),getName(om.isMethodFqn())),
                                 selfArg(om.getSelfParameter(), Type.getObjectType(className)));
